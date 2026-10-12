@@ -12,7 +12,7 @@
 <body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col justify-between">
 
     <div>
-        <!-- Header -->
+        <!-- Header / Navegación -->
         <header class="bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg">
             <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center space-x-2 cursor-pointer" onclick="filtrarCategoria('Todas')">
@@ -88,7 +88,7 @@
         </div>
     </div>
 
-    <!-- Footer con aviso legal obligatorio de Amazon -->
+    <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-slate-500 text-sm mt-12">
         <p>Smartchollo &copy; 2026 - Automatización inteligente de ofertas en Amazon.</p>
         <p class="text-xs text-slate-400 mt-2 max-w-2xl mx-auto px-4">
@@ -99,6 +99,7 @@
     <!-- Script de Supabase y Lógica -->
     <script>
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
+        // Sustituye únicamente la siguiente línea si usas otra clave anon de tu panel
         const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -213,26 +214,27 @@
 
             setTimeout(async () => {
                 const textoLower = texto.toLowerCase();
+                const nombreProducto = texto.charAt(0).toUpperCase() + texto.slice(1);
                 let categoriaAsignada = 'Tecnología';
                 let motivoIA = '';
 
-                if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza')) {
+                if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza') || textoLower.includes('perro') || textoLower.includes('mascota')) {
                     categoriaAsignada = 'Salud y belleza';
-                    motivoIA = `Recomendado por su fórmula con ingredientes de alta calidad que cuidan tu bienestar personal. Es una de las opciones mejor valoradas en Amazon dentro de la categoría de cuidado personal gracias a sus resultados visibles y excelentes opiniones de usuarios.`;
+                    motivoIA = `Análisis para "${nombreProducto}": Seleccionado por su gran calidad de ingredientes y formulación eficaz. Es uno de los productos de cuidado y bienestar más recomendados en su categoría en Amazon por sus valoraciones positivas de usuarios.`;
                 } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('casa') || textoLower.includes('lámpara') || textoLower.includes('hogar') || textoLower.includes('mueble')) {
                     categoriaAsignada = 'Hogar';
-                    motivoIA = `Ideal para hacer tu vida diaria en casa más cómoda y eficiente. Destaca por su durabilidad, diseño práctico y por ofrecer prestaciones premium a un precio mucho más competitivo que la competencia en Amazon.`;
+                    motivoIA = `Análisis para "${nombreProducto}": Diseñado especialmente para optimizar las tareas del hogar. Destaca por su durabilidad, construcción de alta calidad y por ofrecer prestaciones avanzadas a un precio muy competitivo en Amazon.`;
                 } else {
                     categoriaAsignada = 'Tecnología';
-                    motivoIA = `Seleccionado por su gran rendimiento tecnológico y componentes de última generación. Excelente relación calidad-precio para usuarios que buscan conectividad, rapidez y valoraciones impecables en Amazon.`;
+                    motivoIA = `Análisis para "${nombreProducto}": Destaca por su tecnología de vanguardia y excelente rendimiento general. Una oportunidad ideal si buscas un dispositivo rápido, confiable y con una relación calidad-precio imbatible en Amazon.`;
                 }
 
-                // Enlace con tu ID de Afiliado smartchollo-21
+                // Imagen dinámica adaptada al texto buscado mediante LoremFlickr
+                const imagenDinamica = `https://loremflickr.com/600/400/${encodeURIComponent(texto)}`;
                 const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
-                const imagenDinamica = `https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600`;
 
                 const nuevoProducto = {
-                    titulo: `Chollo Destacado: ${texto.charAt(0).toUpperCase() + texto.slice(1)}`,
+                    titulo: `Chollo Destacado: ${nombreProducto}`,
                     descripcion: motivoIA,
                     enlace_amazon: enlaceAfiliadoAmazon,
                     imagen_url: imagenDinamica,
