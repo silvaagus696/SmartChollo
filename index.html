@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smartchollo - Las Mejores Ofertas e Inteligencia Artificial en Chollos</title>
+    <title>Smartchollo - Ofertas Inteligentes de Amazon</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
@@ -12,26 +12,26 @@
 <body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col justify-between">
 
     <div>
-        <!-- Header / Navegación -->
+        <!-- Header -->
         <header class="bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg">
             <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center space-x-2 cursor-pointer" onclick="filtrarCategoria('Todas')">
                     <span class="text-3xl">🔥</span>
                     <h1 class="text-2xl font-black tracking-tight">Smartchollo</h1>
                 </div>
-                <p class="text-orange-100 text-sm text-center md:text-right">Buscador inteligente de ofertas con IA en tiempo real.</p>
+                <p class="text-orange-100 text-sm text-center md:text-right">Buscador inteligente de ofertas en tiempo real.</p>
             </div>
         </header>
 
         <!-- Buscador Principal -->
         <main class="max-w-6xl mx-auto px-4 py-8">
             <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-slate-100">
-                <h2 class="text-xl font-bold mb-4 text-slate-800 text-center">¿Qué chollo inteligente buscas hoy?</h2>
+                <h2 class="text-xl font-bold mb-4 text-slate-800 text-center">Encuentra o genera un chollo personalizado</h2>
                 <div class="flex flex-col sm:flex-row gap-3">
                     <input 
                         type="text" 
                         id="searchInput" 
-                        placeholder="Ej. Crema hidratante, Robot aspirador, Auriculares Bluetooth..." 
+                        placeholder="Ej. Freidora de aire, Champú anticaída, Auriculares Bluetooth..." 
                         class="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 text-slate-800"
                     >
                     <button 
@@ -42,7 +42,7 @@
                 </div>
             </div>
 
-            <!-- Botones de Categorías Avanzadas -->
+            <!-- Botones de Categorías -->
             <div class="flex flex-wrap justify-center gap-3 mb-8">
                 <button onclick="filtrarCategoria('Todas')" class="cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-orange-600 text-white shadow-sm" data-cat="Todas">🔥 Todas</button>
                 <button onclick="filtrarCategoria('Salud y belleza')" class="cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-white text-slate-700 hover:bg-slate-100 border border-slate-200" data-cat="Salud y belleza">💄 Salud y Belleza</button>
@@ -50,42 +50,65 @@
                 <button onclick="filtrarCategoria('Tecnología')" class="cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-white text-slate-700 hover:bg-slate-100 border border-slate-200" data-cat="Tecnología">💻 Tecnología</button>
             </div>
 
-            <!-- Contenedor de Resultados -->
+            <!-- Resultados -->
             <section>
                 <div class="flex justify-between items-center mb-6 border-b pb-2">
                     <h3 id="categoriaTitulo" class="text-xl font-bold text-slate-800">Chollos Destacados</h3>
                     <span id="contadorResultados" class="text-sm text-slate-500 font-medium"></span>
                 </div>
-                <div id="loading" class="text-center py-12 text-slate-500 hidden">Buscando las mejores ofertas con IA...</div>
-                <div id="productosGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Las tarjetas de productos se inyectarán aquí -->
-                </div>
+                <div id="loading" class="text-center py-12 text-slate-500 hidden">Analizando y generando ficha del chollo con IA...</div>
+                <div id="productosGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </section>
         </main>
     </div>
 
-    <!-- Footer -->
+    <!-- MODAL DE DETALLE DEL PRODUCTO -->
+    <div id="modalDetalle" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="relative">
+                <img id="modalImagen" src="" alt="" class="w-full h-64 object-cover">
+                <button onclick="cerrarModal()" class="absolute top-4 right-4 bg-white/80 hover:bg-white text-slate-800 w-10 h-10 rounded-full flex items-center justify-center font-bold text-xl shadow-md transition">✕</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <span id="modalCategoria" class="text-xs font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 px-3 py-1 rounded-full"></span>
+                <h3 id="modalTitulo" class="text-2xl font-bold text-slate-800 mt-3 mb-4"></h3>
+                
+                <div class="bg-orange-50/60 border border-orange-100 rounded-2xl p-4 mb-6">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-orange-700 mb-1">💡 Motivo de compra analizado por IA</h4>
+                    <p id="modalDescripcion" class="text-slate-700 text-sm leading-relaxed"></p>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                    <span class="text-xs text-slate-400">Popularidad: <strong id="modalClics">0</strong> clics</span>
+                    <a id="modalEnlaceAmazon" href="#" target="_blank" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md flex items-center gap-2">
+                        <span>Ver Oferta en Amazon</span> &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer con aviso legal obligatorio de Amazon -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-slate-500 text-sm mt-12">
         <p>Smartchollo &copy; 2026 - Automatización inteligente de ofertas en Amazon.</p>
+        <p class="text-xs text-slate-400 mt-2 max-w-2xl mx-auto px-4">
+            Como Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables.
+        </p>
     </footer>
 
-    <!-- Configuración e Interacción con Supabase -->
+    <!-- Script de Supabase y Lógica -->
     <script>
-        // ==========================================
-        // CONFIGURACIÓN DE SUPABASE
-        // ==========================================
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp'; // <-- Asegúrate de mantener tu clave correcta aquí
+        const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let categoriaActual = 'Todas';
+        let productosCargados = [];
 
-        // Cargar productos al iniciar
         window.addEventListener('DOMContentLoaded', () => {
             cargarProductos();
         });
 
-        // Obtener productos de Supabase con filtros
         async function cargarProductos(filtroTexto = '', categoriaFiltro = 'Todas') {
             const loadingEl = document.getElementById('loading');
             const gridEl = document.getElementById('productosGrid');
@@ -105,45 +128,46 @@
             }
 
             const { data, error } = await query;
-
             loadingEl.classList.add('hidden');
 
             if (error) {
-                console.error('Error al cargar productos:', error);
                 gridEl.innerHTML = `<p class="col-span-full text-red-500 text-center">Error al conectar con la base de datos.</p>`;
                 return;
             }
 
-            if (!data || data.length === 0) {
+            productosCargados = data || [];
+
+            if (!productosCargados || productosCargados.length === 0) {
                 gridEl.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-                        <p class="text-slate-600 text-lg mb-2">No hemos encontrado chollos exactos para "${filtroTexto || categoriaFiltro}".</p>
-                        <p class="text-slate-400 text-sm mb-6">Prueba a hacer clic en "Buscar con IA" para que el sistema busque y genere este chollo automáticamente.</p>
+                        <p class="text-slate-600 text-lg mb-2">No hay resultados directos para "${filtroTexto || categoriaFiltro}".</p>
+                        <p class="text-slate-400 text-sm mb-6">Haz clic en "Buscar con IA" para generar automáticamente la ficha de este producto.</p>
                     </div>`;
                 contadorEl.innerText = `0 chollos`;
                 return;
             }
 
-            contadorEl.innerText = `${data.length} chollos encontrados`;
+            contadorEl.innerText = `${productosCargados.length} chollos encontrados`;
 
-            // Renderizar tarjetas
-            data.forEach(producto => {
+            productosCargados.forEach(producto => {
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col justify-between hover:shadow-xl transition duration-300';
+                card.className = 'bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col justify-between hover:shadow-xl transition duration-300 cursor-pointer';
+                card.onclick = () => abrirModal(producto.id);
+                
                 card.innerHTML = `
                     <div>
-                        <img src="${producto.imagen_url || 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600'}" alt="${producto.titulo}" class="w-full h-48 object-cover">
+                        <img src="${producto.imagen_url}" alt="${producto.titulo}" class="w-full h-48 object-cover">
                         <div class="p-5">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">${producto.categoria || 'General'}</span>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">${producto.categoria}</span>
                             <h4 class="font-bold text-lg text-slate-800 mt-3 mb-2 line-clamp-2">${producto.titulo}</h4>
-                            <p class="text-slate-600 text-sm line-clamp-3 mb-4 leading-relaxed">${producto.descripcion || 'Sin descripción disponible.'}</p>
+                            <p class="text-slate-600 text-sm line-clamp-3 mb-4 leading-relaxed">${producto.descripcion}</p>
                         </div>
                     </div>
                     <div class="p-5 pt-0 flex items-center justify-between border-t border-slate-100 mt-auto bg-slate-50/50 py-3">
-                        <span class="text-xs text-slate-400">Clics: <strong id="clics-${producto.id}">${producto.clics || 0}</strong></span>
-                        <a href="${producto.enlace_amazon || 'https://amazon.es'}" target="_blank" onclick="registrarClic(${producto.id})" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition duration-200 shadow-sm">
-                            Ver Chollo &rarr;
-                        </a>
+                        <span class="text-xs text-slate-400">Popularidad: <strong>${producto.clics || 0} clics</strong></span>
+                        <button class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">
+                            Ver Ficha Completa
+                        </button>
                     </div>
                 `;
                 gridEl.appendChild(card);
@@ -154,13 +178,10 @@
             categoriaActual = categoria;
             document.getElementById('categoriaTitulo').innerText = categoria === 'Todas' ? 'Chollos Destacados' : `Chollos en ${categoria}`;
             
-            // Actualizar diseño de botones
             document.querySelectorAll('.cat-btn').forEach(btn => {
-                if (btn.getAttribute('data-cat') === categoria) {
-                    btn.className = 'cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-orange-600 text-white shadow-sm';
-                } else {
-                    btn.className = 'cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-white text-slate-700 hover:bg-slate-100 border border-slate-200';
-                }
+                btn.className = btn.getAttribute('data-cat') === categoria
+                    ? 'cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-orange-600 text-white shadow-sm'
+                    : 'cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-white text-slate-700 hover:bg-slate-100 border border-slate-200';
             });
 
             const textoBusqueda = document.getElementById('searchInput').value;
@@ -179,11 +200,9 @@
             loadingEl.classList.remove('hidden');
             gridEl.innerHTML = '';
 
-            // Primero buscamos en la base de datos
             let query = supabaseClient.from('productos').select('*').ilike('titulo', `%${texto}%`);
-            if (categoriaActual !== 'Todas') {
-                query = query.eq('categoria', categoriaActual);
-            }
+            if (categoriaActual !== 'Todas') query = query.eq('categoria', categoriaActual);
+            
             let { data } = await query;
 
             if (data && data.length > 0) {
@@ -192,50 +211,71 @@
                 return;
             }
 
-            // Si no existe, simulamos la respuesta inteligente de la IA y lo guardamos automáticamente en Supabase
             setTimeout(async () => {
-                let categoriaAsignada = categoriaActual === 'Todas' ? 'Tecnología' : categoriaActual;
-                if (texto.toLowerCase().includes('crema') || texto.toLowerCase().includes('cabello') || texto.toLowerCase().includes('belleza') || texto.toLowerCase().includes('salud')) {
+                const textoLower = texto.toLowerCase();
+                let categoriaAsignada = 'Tecnología';
+                let motivoIA = '';
+
+                if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza')) {
                     categoriaAsignada = 'Salud y belleza';
-                } else if (texto.toLowerCase().includes('hogar') || texto.toLowerCase().includes('aspirador') || texto.toLowerCase().includes('cocina') || texto.toLowerCase().includes('lámpara')) {
+                    motivoIA = `Recomendado por su fórmula con ingredientes de alta calidad que cuidan tu bienestar personal. Es una de las opciones mejor valoradas en Amazon dentro de la categoría de cuidado personal gracias a sus resultados visibles y excelentes opiniones de usuarios.`;
+                } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('casa') || textoLower.includes('lámpara') || textoLower.includes('hogar') || textoLower.includes('mueble')) {
                     categoriaAsignada = 'Hogar';
+                    motivoIA = `Ideal para hacer tu vida diaria en casa más cómoda y eficiente. Destaca por su durabilidad, diseño práctico y por ofrecer prestaciones premium a un precio mucho más competitivo que la competencia en Amazon.`;
+                } else {
+                    categoriaAsignada = 'Tecnología';
+                    motivoIA = `Seleccionado por su gran rendimiento tecnológico y componentes de última generación. Excelente relación calidad-precio para usuarios que buscan conectividad, rapidez y valoraciones impecables en Amazon.`;
                 }
 
+                // Enlace con tu ID de Afiliado smartchollo-21
+                const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
+                const imagenDinamica = `https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600`;
+
                 const nuevoProducto = {
-                    titulo: `Oferta Destacada en ${texto}`,
-                    descripcion: `Este producto ha sido seleccionado inteligentemente por alta demanda. Destaca por su fantástica relación calidad-precio, valoraciones excelentes de usuarios y rendimiento superior en ${categoriaAsignada.toLowerCase()}. ¡Una oportunidad única de compra en Amazon!`,
-                    enlace_amazon: `https://www.amazon.es/s?k=${encodeURIComponent(texto)}`,
-                    imagen_url: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600',
+                    titulo: `Chollo Destacado: ${texto.charAt(0).toUpperCase() + texto.slice(1)}`,
+                    descripcion: motivoIA,
+                    enlace_amazon: enlaceAfiliadoAmazon,
+                    imagen_url: imagenDinamica,
                     categoria: categoriaAsignada,
                     clics: 0
                 };
 
-                // Guardar automáticamente en Supabase
                 await supabaseClient.from('productos').insert([nuevoProducto]);
-
-                // Recargar listado
                 cargarProductos(texto, categoriaActual);
-            }, 1000);
+            }, 800);
         }
 
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                buscarOCrearChollo();
-            }
-        });
+        function abrirModal(id) {
+            const producto = productosCargados.find(p => p.id === id);
+            if (!producto) return;
+
+            document.getElementById('modalImagen').src = producto.imagen_url;
+            document.getElementById('modalTitulo').innerText = producto.titulo;
+            document.getElementById('modalCategoria').innerText = producto.categoria;
+            document.getElementById('modalDescripcion').innerText = producto.descripcion;
+            document.getElementById('modalClics').innerText = producto.clics || 0;
+            
+            const btnAmazon = document.getElementById('modalEnlaceAmazon');
+            btnAmazon.href = producto.enlace_amazon;
+            btnAmazon.onclick = () => registrarClic(producto.id);
+
+            document.getElementById('modalDetalle').classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalDetalle').classList.add('hidden');
+        }
 
         async function registrarClic(idProducto) {
-            const spanClics = document.getElementById(`clics-${idProducto}`);
-            if (spanClics) {
-                let actual = parseInt(spanClics.innerText) || 0;
-                spanClics.innerText = actual + 1;
-            }
-
             const { data: productoActual } = await supabaseClient.from('productos').select('clics').eq('id', idProducto).single();
             if (productoActual) {
                 await supabaseClient.from('productos').update({ clics: (productoActual.clics || 0) + 1 }).eq('id', idProducto);
             }
         }
+
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') buscarOCrearChollo();
+        });
     </script>
 </body>
 </html>
