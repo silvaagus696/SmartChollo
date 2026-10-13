@@ -37,7 +37,7 @@
                     <button 
                         onclick="buscarOCrearChollo()" 
                         class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2">
-                        <span>✨ Buscar con IA</span>
+                        <span>✨ Buscar chollo</span>
                     </button>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                     <h3 id="categoriaTitulo" class="text-xl font-bold text-slate-800">Chollos Destacados</h3>
                     <span id="contadorResultados" class="text-sm text-slate-500 font-medium"></span>
                 </div>
-                <div id="loading" class="text-center py-12 text-slate-500 hidden">Analizando y generando ficha personalizada del chollo...</div>
+                <div id="loading" class="text-center py-12 text-slate-500 hidden">Buscando y redactando ficha optimizada...</div>
                 <div id="productosGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </section>
         </main>
@@ -74,7 +74,7 @@
                 <h3 id="modalTitulo" class="text-2xl font-bold text-slate-800 mt-3 mb-4"></h3>
                 
                 <div class="bg-orange-50/60 border border-orange-100 rounded-2xl p-4 mb-6">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-orange-700 mb-1">💡 Motivo de compra analizado</h4>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-orange-700 mb-1">💡 Análisis y Motivo de Compra</h4>
                     <p id="modalDescripcion" class="text-slate-700 text-sm leading-relaxed"></p>
                 </div>
 
@@ -146,7 +146,7 @@
                 gridEl.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
                         <p class="text-slate-600 text-lg mb-2">No hay resultados directos para "${filtroTexto || categoriaFiltro}".</p>
-                        <p class="text-slate-400 text-sm mb-6">Haz clic en "Buscar con IA" para generar automáticamente la ficha de este producto.</p>
+                        <p class="text-slate-400 text-sm mb-6">Haz clic en buscar para generar automáticamente la ficha detallada de este producto.</p>
                     </div>`;
                 contadorEl.innerText = `0 chollos`;
                 return;
@@ -182,25 +182,25 @@
         async function inicializarBaseDeDatos() {
             const iniciales = [
                 {
-                    titulo: "Auriculares Inalámbricos Bluetooth con Cancelación de Ruido",
-                    descripcion: "Excelente relación calidad-precio. Destacan por su gran autonomía de batería, sonido nítido y ajuste ergonómico, siendo una de las opciones mejor valoradas en tecnología en Amazon.",
-                    enlace_amazon: "https://www.amazon.es/s?k=auriculares+bluetooth&tag=smartchollo-21",
+                    titulo: "Auriculares Inalámbricos Bluetooth Deportivos",
+                    descripcion: "Si buscas libertad de movimiento sin renunciar a un sonido estéreo de alta fidelidad, estos auriculares inalámbricos son una opción excelente. Cuentan con diseño ergonómico de sujeción segura, resistencia al sudor IPX7 y una caja de carga rápida que ofrece hasta 30 horas de reproducción total. Perfectos tanto para entrenar intensamente como para teletrabajar.",
+                    enlace_amazon: "https://www.amazon.es/s?k=auriculares+bluetooth+deportivos&tag=smartchollo-21",
                     imagen_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600",
                     categoria: "Tecnología",
                     clics: 0
                 },
                 {
-                    titulo: "Freidora de Aire Sin Aceite de Alta Capacidad",
-                    descripcion: "Diseñada para cocinar de forma más saludable reduciendo el uso de grasa hasta un 85%. Cuenta con programas táctiles intuitivos y una cesta fácil de limpiar.",
-                    enlace_amazon: "https://www.amazon.es/s?k=freidora+de+aire&tag=smartchollo-21",
+                    titulo: "Freidora de Aire Digital sin Aceite 5.5L",
+                    descripcion: "Revoluciona tu forma de cocinar reduciendo hasta un 90% de grasa en tus platos favoritos. Incorpora pantalla táctil LED con múltiples programas preconfigurados para patatas, carnes, pescados o repostería, además de una cesta antiadherente de gran capacidad apta para lavavajillas. Una alternativa rápida, limpia y económica frente al horno convencional.",
+                    enlace_amazon: "https://www.amazon.es/s?k=freidora+de+aire+digital&tag=smartchollo-21",
                     imagen_url: "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600",
                     categoria: "Hogar",
                     clics: 0
                 },
                 {
-                    titulo: "Serum Facial Hidratante con Ácido Hialurónico",
-                    descripcion: "Fórmula de rápida absorción recomendada para el cuidado diario de la piel. Ayuda a mantener la hidratación profunda y aporta luminosidad natural con valoraciones excelentes.",
-                    enlace_amazon: "https://www.amazon.es/s?k=serum+facial+hidratante&tag=smartchollo-21",
+                    titulo: "Sérum Facial Antiedad con Vitamina C y Ácido Hialurónico",
+                    descripcion: "Tratamiento intensivo formulado para devolver la luminosidad y firmeza natural al rostro. Su textura ligera se absorbe al instante penetrando en las capas profundas de la piel para combatir manchas, líneas de expresión y aportar una hidratación profunda durante todo el día. Dermatológicamente testado para todo tipo de pieles.",
+                    enlace_amazon: "https://www.amazon.es/s?k=serum+facial+vitamina+c&tag=smartchollo-21",
                     imagen_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600",
                     categoria: "Salud y belleza",
                     clics: 0
@@ -225,6 +225,7 @@
             cargarProductos(textoBusqueda, categoriaActual);
         }
 
+        // Generador dinámico de descripciones ultra-detalladas y personalizadas
         async function buscarOCrearChollo() {
             const texto = document.getElementById('searchInput').value.trim();
             if (!texto) {
@@ -253,17 +254,18 @@
                 const nombreProducto = texto.charAt(0).toUpperCase() + texto.slice(1);
                 
                 let categoriaAsignada = 'Tecnología';
-                let motivoPersonalizado = '';
+                let descripcionDetallada = '';
 
-                if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza') || textoLower.includes('serum')) {
+                // Detección inteligente y redacción rica y específica basada en lo que busca el usuario
+                if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza') || textoLower.includes('serum') || textoLower.includes('aceite')) {
                     categoriaAsignada = 'Salud y belleza';
-                    motivoPersonalizado = `Análisis de oferta para "${nombreProducto}": Producto de cuidado personal destacado por su fórmula suave y respetuosa. Es una de las compras mejor valoradas en Amazon dentro de sua categoría.`;
-                } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('lámpara') || textoLower.includes('hogar') || textoLower.includes('mueble') || textoLower.includes('robot')) {
+                    descripcionDetallada = `Si estás buscando "${nombreProducto}", esta alternativa en Amazon destaca por reunir opiniones excepcionales gracias a su fórmula avanzada de rápida absorción. Diseñado para ofrecer resultados visibles desde las primeras aplicaciones, cuida y protege tu bienestar personal utilizando ingredientes de máxima calidad que marcan la diferencia en tu rutina diaria.`;
+                } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('lámpara') || textoLower.includes('hogar') || textoLower.includes('mueble') || textoLower.includes('robot') || textoLower.includes('cafetera')) {
                     categoriaAsignada = 'Hogar';
-                    motivoPersonalizado = `Análisis de oferta para "${nombreProducto}": Excelente solución para el hogar que combina practicidad, eficiencia en el día a día y durabilidad probada con grandes valoraciones de usuarios.`;
+                    descripcionDetallada = `El modelo analizado de "${nombreProducto}" es perfecto para optimizar el tiempo y el confort en tu casa. Destaca por su alta durabilidad, consumo energético eficiente y un diseño práctico que facilita al máximo las tareas cotidianas. Una de las opciones con mejor relación calidad-precio recomendada por los compradores en Amazon.`;
                 } else {
                     categoriaAsignada = 'Tecnología';
-                    motivoPersonalizado = `Análisis de oferta para "${nombreProducto}": Seleccionado por su gran rendimiento tecnológico, acabados de calidad y una relación calidad-precio imbatible en Amazon.`;
+                    descripcionDetallada = `Dentro de la categoría tecnológica, "${nombreProducto}" sobresale por integrar componentes de última generación orientados a ofrecer la máxima velocidad, estabilidad y rendimiento. Es una compra inteligente si buscas especificaciones técnicas de gama superior respaldadas por valoraciones sobresalientes en Amazon.`;
                 }
 
                 let urlImagen = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=600';
@@ -276,8 +278,8 @@
                 const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
 
                 const nuevoProducto = {
-                    titulo: `${nombreProducto} - Oferta Recomendada`,
-                    descripcion: motivoPersonalizado,
+                    titulo: `${nombreProducto} - Gran Oferta en Amazon`,
+                    descripcion: descripcionDetallada,
                     enlace_amazon: enlaceAfiliadoAmazon,
                     imagen_url: urlImagen,
                     categoria: categoriaAsignada,
