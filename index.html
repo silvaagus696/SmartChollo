@@ -137,7 +137,6 @@
 
             productosCargados = data || [];
 
-            // Si la base de datos está totalmente vacía, precargamos 3 productos iniciales variados
             if (productosCargados.length === 0 && !filtroTexto && categoriaFiltro === 'Todas') {
                 await inicializarBaseDeDatos();
                 return;
@@ -258,7 +257,7 @@
 
                 if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza') || textoLower.includes('serum')) {
                     categoriaAsignada = 'Salud y belleza';
-                    motivoPersonalizado = `Análisis de oferta para "${nombreProducto}": Producto de cuidado personal destacado por su fórmula suave y respetuosa. Es una de las compras mejor valoradas en Amazon dentro de su categoría.`;
+                    motivoPersonalizado = `Análisis de oferta para "${nombreProducto}": Producto de cuidado personal destacado por su fórmula suave y respetuosa. Es una de las compras mejor valoradas en Amazon dentro de sua categoría.`;
                 } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('lámpara') || textoLower.includes('hogar') || textoLower.includes('mueble') || textoLower.includes('robot')) {
                     categoriaAsignada = 'Hogar';
                     motivoPersonalizado = `Análisis de oferta para "${nombreProducto}": Excelente solución para el hogar que combina practicidad, eficiencia en el día a día y durabilidad probada con grandes valoraciones de usuarios.`;
@@ -267,7 +266,6 @@
                     motivoPersonalizado = `Análisis de oferta para "${nombreProducto}": Seleccionado por su gran rendimiento tecnológico, acabados de calidad y una relación calidad-precio imbatible en Amazon.`;
                 }
 
-                // Imagen temática según la categoría
                 let urlImagen = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=600';
                 if (categoriaAsignada === 'Salud y belleza') {
                     urlImagen = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600';
@@ -275,7 +273,6 @@
                     urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
                 }
 
-                // Enlace dinámico directo a la búsqueda en Amazon con tu Tag de Afiliado
                 const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
 
                 const nuevoProducto = {
