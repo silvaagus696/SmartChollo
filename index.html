@@ -56,7 +56,7 @@
                     <h3 id="categoriaTitulo" class="text-xl font-bold text-slate-800">Selección Destacada</h3>
                     <span id="contadorResultados" class="text-sm text-slate-500 font-medium"></span>
                 </div>
-                <div id="loading" class="text-center py-12 text-slate-500 hidden">Generando guía comparativa de compra...</div>
+                <div id="loading" class="text-center py-12 text-slate-500 hidden">Buscando y preparando guía comparativa...</div>
                 <div id="productosGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </section>
         </main>
@@ -96,7 +96,7 @@
         </p>
     </footer>
 
-    <!-- Script de Supabase y Lógica Adaptada -->
+    <!-- Script de Supabase Sin Precarga Predeterminada -->
     <script>
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
@@ -137,16 +137,12 @@
 
             productosCargados = data || [];
 
-            if (productosCargados.length === 0 && !filtroTexto && categoriaFiltro === 'Todas') {
-                await inicializarCatalogoProfesional();
-                return;
-            }
-
+            // Si no hay productos guardados, se muestra una interfaz limpia de bienvenida
             if (!productosCargados || productosCargados.length === 0) {
                 gridEl.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-                        <p class="text-slate-600 text-lg mb-2">No se encontraron productos para "${filtroTexto || categoriaFiltro}".</p>
-                        <p class="text-slate-400 text-sm mb-6">Haz clic en "Analizar Opción" para generar la guía comparativa automáticamente.</p>
+                        <p class="text-slate-600 text-lg mb-2">Escribe cualquier producto en el buscador para generar su guía comparativa.</p>
+                        <p class="text-slate-400 text-sm">Ejemplo: "Cafetera de cápsulas", "Aspirador robot", "Gafas de sol"...</p>
                     </div>`;
                 contadorEl.innerText = `0 artículos`;
                 return;
@@ -177,30 +173,6 @@
                 `;
                 gridEl.appendChild(card);
             });
-        }
-
-        async function inicializarCatalogoProfesional() {
-            const catalogoInicial = [
-                {
-                    titulo: "Auriculares Inalámbricos Bluetooth - Guía de Elección",
-                    descripcion: "Análisis comparativo de alternativas en audio inalámbrico. Se valora especialmente la relación autonomía-precio y la comodidad de uso diario.",
-                    enlace_amazon: "https://www.amazon.es/s?k=auriculares+bluetooth&tag=smartchollo-21",
-                    imagen_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600",
-                    categoria: "Tecnología",
-                    clics: 0
-                },
-                {
-                    titulo: "Freidora de Aire de Gran Capacidad - Análisis y Rendimiento",
-                    descripcion: "Evaluación práctica de freidoras de aire sin aceite. Comparativa enfocada en eficiencia energética, volumen de cocción y facilidad de limpieza.",
-                    enlace_amazon: "https://www.amazon.es/s?k=freidora+de+aire&tag=smartchollo-21",
-                    imagen_url: "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600",
-                    categoria: "Hogar",
-                    clics: 0
-                }
-            ];
-
-            await supabaseClient.from('productos').insert(catalogoInicial);
-            cargarProductos();
         }
 
         async function buscarOCrearChollo() {
@@ -240,7 +212,6 @@
                 urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
             }
 
-            // REDACCIÓN 100% CONFORME A LAS NORMAS DE AMAZON (SIN PRECIOS/RATING FICTICIOS)
             const comparativaTexto = `
                 <p class="font-medium text-slate-800 mb-2">Puntos clave a considerar para la compra de <strong>"${nombreCapitalizado}"</strong>:</p>
                 <ul class="list-disc pl-5 space-y-1 text-slate-600 mb-3">
