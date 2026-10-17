@@ -1,41 +1,654 @@
--- Función para sumar clics de forma segura
-create or replace function public.incrementar_clics(p_id text)
-returns void
-language sql
-security definer
-set search_path = public
-as $$
-  update public.productos
-  set clics = coalesce(clics, 0) + 1
-  where id::text = p_id;
-$$;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smartchollo - Guías de compra con enlaces de afiliado</title>
+<meta name="description" content="Guías de compra por gamas (económica, calidad-precio y premium) con criterios para elegir. Contiene enlaces de afiliado de Amazon.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col justify-between">
 
-revoke all on function public.incrementar_clics(text) from public;
-grant execute on function public.incrementar_clics(text) to anon, authenticated;
+<div>
+  <header class="bg-gradient-to-r from-orange-600 via-amber-600 to-amber-500 text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <button id="logoBtn" class="flex items-center space-x-2" type="button">
+        <span class="text-3xl">🔥</span>
+        <span class="text-2xl font-black tracking-tight">Smartchollo</span>
+      </button>
+      <p class="text-orange-50 text-sm text-center md:text-right font-medium">Guías de compra: qué mirar en cada gama antes de elegir.</p>
+    </div>
+  </header>
 
--- Políticas de seguridad (RLS)
-alter table public.productos enable row level security;
+  <!-- AVISO DE AFILIACIÓN VISIBLE (sin depender de JavaScript) -->
+  <div class="bg-amber-50 border-b border-amber-200 text-amber-900 text-xs sm:text-sm">
+    <p class="max-w-6xl mx-auto px-4 py-2 text-center">
+      <strong>Publicidad / enlaces de afiliado:</strong>
+      En calidad de Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables.
+      <button type="button" data-legal="afiliados" class="underline font-semibold">Más información</button>
+    </p>
+  </div>
 
-drop policy if exists "Permitir lectura publica de productos" on public.productos;
-drop policy if exists "Permitir insertar productos nuevos" on public.productos;
-drop policy if exists "Permitir actualizar clics" on public.productos;
-drop policy if exists "lectura publica" on public.productos;
-drop policy if exists "Lectura publica de productos" on public.productos;
-drop policy if exists "Insercion validada de guias" on public.productos;
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-slate-100">
+      <h2 class="text-xl font-bold mb-4 text-slate-800 text-center">Busca un producto y obtén su guía por gamas</h2>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input id="searchInput" type="text" maxlength="80" autocomplete="off"
+          placeholder="Ej. Auriculares inalámbricos, freidora de aire, zapatillas running..."
+          class="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 text-slate-800">
+        <button id="searchBtn" type="button"
+          class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition shadow-md">
+          📊 Generar guía
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 mt-3 text-center">
+        El término que escribas se usará para crear una guía pública en esta web. No escribas datos personales.
+      </p>
+      <p id="mensajeBusqueda" class="text-sm text-red-600 mt-2 text-center hidden" role="alert"></p>
+    </div>
 
-create policy "Lectura publica de productos"
-  on public.productos for select
-  using (true);
+    <div id="categorias" class="flex flex-wrap justify-center gap-3 mb-8"></div>
 
-create policy "Insercion validada de guias"
-  on public.productos for insert
-  with check (
-    char_length(titulo) between 24 and 120
-    and titulo ~ ' - Comparativa Top 3$'
-    and enlace_amazon like 'https://www.amazon.es/s?k=%'
-    and imagen_url like 'https://images.unsplash.com/%'
-    and categoria in ('Salud y belleza', 'Hogar', 'Tecnología', 'Deportes y Moda')
-    and coalesce(clics, 0) = 0
-    and char_length(coalesce(descripcion, '')) <= 20000
-    and titulo !~* '\y(porn\w*|sexo|sexual\w*|erotic\w*|xxx|pistola\w*|rifle\w*|escopeta\w*|munici[oó]n\w*|droga\w*|cannabis|marihuana|coca[ií]na|hero[ií]na|nazi\w*)\y'
-  );
+    <section>
+      <div class="flex justify-between items-center mb-6 border-b pb-2">
+        <h3 id="categoriaTitulo" class="text-xl font-bold text-slate-800">Selección destacada</h3>
+        <span id="contadorResultados" class="text-sm text-slate-500 font-medium"></span>
+      </div>
+      <div id="loading" class="text-center py-12 text-slate-500 hidden font-medium">Cargando guías...</div>
+      <div id="productosGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL DE GUÍA -->
+<div id="modalDetalle" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+  <div class="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+    <div class="relative bg-slate-900 text-white p-6">
+      <span id="modalCategoria" class="text-xs font-semibold uppercase tracking-wider text-orange-400 bg-orange-950/60 border border-orange-800/50 px-3 py-1 rounded-full"></span>
+      <h3 id="modalTitulo" class="text-2xl font-bold mt-3 pr-10"></h3>
+      <button data-action="cerrar" type="button" aria-label="Cerrar"
+        class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white w-9 h-9 rounded-full font-bold text-lg transition">✕</button>
+    </div>
+    <div class="p-6 overflow-y-auto space-y-5">
+      <div class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1">
+        <p><strong>Publicidad - enlaces de afiliado:</strong> En calidad de Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables. Si compras a través de estos enlaces puedo recibir una comisión, sin coste adicional para ti.</p>
+        <p>Cada botón abre una búsqueda en Amazon.es. Smartchollo no recomienda un producto concreto: los productos, precios, disponibilidad y valoraciones que veas allí son los que Amazon muestre en ese momento. Esta guía es orientativa y se genera a partir de criterios generales de compra.</p>
+      </div>
+      <div id="modalTop3Contenedor" class="space-y-4"></div>
+    </div>
+    <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center">
+      <span class="text-xs text-slate-500">Guía consultada <strong id="modalClics" class="text-slate-700">0</strong> veces</span>
+      <button data-action="cerrar" type="button" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl text-sm transition">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LEGAL -->
+<div id="legalModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="legalTitulo">
+  <div class="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+    <div class="relative bg-slate-900 text-white p-6">
+      <h3 id="legalTitulo" class="text-xl font-bold pr-10">Información legal, privacidad y afiliación</h3>
+      <button data-action="cerrar" type="button" aria-label="Cerrar"
+        class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white w-9 h-9 rounded-full font-bold text-lg transition">✕</button>
+    </div>
+    <div id="legalContenido" class="p-6 overflow-y-auto space-y-6 text-sm text-slate-700 leading-relaxed"></div>
+  </div>
+</div>
+
+<footer class="bg-white border-t border-slate-200 py-6 text-center text-slate-500 text-sm mt-12">
+  <p>Smartchollo &copy; 2026 - Guías de compra con enlaces de afiliado.</p>
+  <p class="text-xs text-slate-600 mt-2 max-w-2xl mx-auto px-4">
+    En calidad de Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables.
+  </p>
+  <p class="text-xs text-slate-500 mt-2 max-w-2xl mx-auto px-4">
+    Smartchollo es un sitio independiente de Amazon: no es propiedad de Amazon ni está respaldado por Amazon. Amazon y el logotipo de Amazon son marcas comerciales de Amazon.com, Inc. o sus afiliadas. Los precios, la disponibilidad y las valoraciones de los productos son los que Amazon muestre en su sitio y pueden cambiar en cualquier momento. Las imágenes de esta web son ilustrativas.
+  </p>
+  <p class="text-xs mt-3 space-x-3">
+    <button type="button" data-legal="aviso" class="underline hover:text-slate-800">Aviso legal</button>
+    <button type="button" data-legal="privacidad" class="underline hover:text-slate-800">Política de privacidad</button>
+    <button type="button" data-legal="cookies" class="underline hover:text-slate-800">Cookies</button>
+    <button type="button" data-legal="afiliados" class="underline hover:text-slate-800">Aviso de afiliación</button>
+  </p>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIGURACIÓN
+   ============================================================ */
+const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
+const AFFILIATE_TAG = 'smartchollo-21';
+const AMAZON_HOST = 'www.amazon.es';
+const IMG_HOST = 'images.unsplash.com';
+const TABLA = 'productos';
+
+/* >>> COMPLETA ESTOS DATOS ANTES DE PUBLICAR (obligatorios por la LSSI y el RGPD) <<< */
+const LEGAL = {
+  nombre: '[TU NOMBRE O RAZÓN SOCIAL]',
+  nif: '[TU NIF/CIF]',
+  domicilio: '[TU DOMICILIO]',
+  email: '[TU EMAIL DE CONTACTO]',
+  dominio: '[TU DOMINIO, p. ej. smartchollo.pages.dev]',
+  actualizado: 'octubre de 2026'
+};
+
+/* Sin sesión ni almacenamiento persistente: la web no necesita cuentas de usuario */
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+});
+
+const CATEGORIAS = [
+  { id: 'Todas', label: '🔥 Todas' },
+  { id: 'Salud y belleza', label: '💄 Salud y belleza' },
+  { id: 'Hogar', label: '🏠 Hogar y cocina' },
+  { id: 'Tecnología', label: '💻 Tecnología' },
+  { id: 'Deportes y Moda', label: '⚽ Deportes y moda' }
+];
+
+const IMG_DEFAULT = `https://${IMG_HOST}/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600`;
+const SUFIJO_TITULO = ' - Comparativa Top 3';
+
+/* Estado en memoria. El producto abierto vive en el DOM (modal.dataset.productId). */
+const mapaProductos = new Map();
+const clicsContados = new Set();
+let categoriaActual = 'Todas';
+let ultimaCreacion = 0;
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function normalizar(t) {
+  return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+function capitalizar(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+function limpiarBusqueda(t) { return String(t).replace(/[<>"'`{}\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 80); }
+
+function urlAmazon(consulta) {
+  const q = encodeURIComponent(String(consulta)).replace(/%20/g, '+');
+  return `https://${AMAZON_HOST}/s?k=${q}&tag=${AFFILIATE_TAG}`;
+}
+function urlSegura(url) {
+  try { const u = new URL(url); return u.protocol === 'https:' && u.hostname === AMAZON_HOST ? u.toString() : '#'; }
+  catch { return '#'; }
+}
+function imgSegura(url) {
+  try { const u = new URL(url); return u.protocol === 'https:' && u.hostname === IMG_HOST ? u.toString() : IMG_DEFAULT; }
+  catch { return IMG_DEFAULT; }
+}
+
+/* Filtro de contenido: evita que la web publique guías de temas incompatibles con el programa de afiliados */
+const BLOQUEADAS = /\b(porn\w*|sexo|sexual\w*|sexshop|erotic\w*|xxx|fetich\w*|pistola\w*|rifle\w*|escopeta\w*|municion\w*|arma de fuego|armas de fuego|droga\w*|cannabis|marihuana|cocaina|heroina|nazi\w*|suicid\w*)\b/;
+function validarBusqueda(texto) {
+  if (texto.length < 3) return 'Escribe al menos 3 caracteres.';
+  if (!/^[\p{L}\p{N} .,+\-]+$/u.test(texto)) return 'Usa solo letras, números y espacios.';
+  if (/(https?|www\.|\.com|\.es|\.net|\.org|@)/i.test(texto)) return 'No incluyas direcciones web ni correos.';
+  if (BLOQUEADAS.test(normalizar(texto))) return 'Este tema no está disponible en Smartchollo.';
+  return '';
+}
+function mostrarMensaje(msg) {
+  const el = document.getElementById('mensajeBusqueda');
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+
+/* ============================================================
+   MOTOR DE PLANTILLAS POR CATEGORÍA
+   Criterios generales de compra: NO se afirman cosas de productos concretos.
+   ============================================================ */
+const PLANTILLAS = {
+  'Tecnología': {
+    basica: {
+      paraQuien: 'Uso ocasional o primer dispositivo, con presupuesto ajustado.',
+      specs: ['Conectividad estable (Bluetooth 5.x, USB-C o Wi-Fi según el caso)', 'Autonomía o rendimiento suficiente para el uso diario', 'Marca con servicio técnico y garantía legal de 3 años en España'],
+      pros: ['Suele tener un precio de entrada contenido', 'Cubre las funciones esenciales'],
+      contras: ['Materiales y acabados normalmente más sencillos', 'Menos funciones avanzadas']
+    },
+    media: {
+      paraQuien: 'La mayoría de usuarios que buscan equilibrio entre prestaciones y coste.',
+      specs: ['Componentes de gama media (sensores, chips o drivers mejores que en la básica)', 'Autonomía alta y carga rápida si aplica', 'Aplicación o software de soporte con actualizaciones'],
+      pros: ['Suele ofrecer mejor calidad de construcción', 'Funciones útiles sin pagar de más'],
+      contras: ['Puede faltar alguna función de gama alta', 'Conviene comparar reseñas recientes de varias marcas']
+    },
+    premium: {
+      paraQuien: 'Usuarios exigentes que priorizan rendimiento y durabilidad.',
+      specs: ['Materiales y componentes de gama alta', 'Funciones avanzadas (p. ej. cancelación de ruido, pantallas o procesadores superiores)', 'Soporte y actualizaciones prolongadas'],
+      pros: ['Mayor rendimiento y mejores acabados', 'Suele ofrecer mayor durabilidad'],
+      contras: ['Precio notablemente superior', 'Parte de la mejora puede ser marginal para un uso normal']
+    }
+  },
+  'Salud y belleza': {
+    basica: {
+      paraQuien: 'Rutinas sencillas o para probar un tipo de producto sin gran inversión.',
+      specs: ['Lista de ingredientes (INCI) clara y sin alérgenos que ya conozcas', 'Indicado para tu tipo de piel o cabello', 'Formato y cantidad adecuados al uso previsto'],
+      pros: ['Coste por uso normalmente bajo', 'Fácil de reemplazar si no te convence'],
+      contras: ['Concentración de activos normalmente menor', 'Puede incluir fragancias o aditivos que no a todos les sientan bien']
+    },
+    media: {
+      paraQuien: 'Quien busca una rutina constante con buena relación calidad-precio.',
+      specs: ['Ingredientes y concentración indicados en la etiqueta', 'Testado dermatológicamente o con certificaciones reconocidas', 'Envase que protege la fórmula (airless, opaco)'],
+      pros: ['Fórmulas normalmente más completas', 'Buen equilibrio entre calidad y precio'],
+      contras: ['La respuesta varía de una persona a otra', 'Requiere constancia durante varias semanas']
+    },
+    premium: {
+      paraQuien: 'Quien prioriza fórmulas elaboradas y experiencia de uso.',
+      specs: ['Ingredientes de alta concentración o tecnologías específicas indicadas por la marca', 'Información de ensayos publicada por el fabricante', 'Envases y texturas de mayor calidad'],
+      pros: ['Fórmulas más elaboradas', 'Mejor experiencia sensorial'],
+      contras: ['Precio por unidad elevado', 'Un precio más alto no garantiza mejores resultados']
+    }
+  },
+  'Hogar': {
+    basica: {
+      paraQuien: 'Hogares pequeños o uso esporádico.',
+      specs: ['Potencia (W) y capacidad (L) acordes al número de personas', 'Materiales antiadherentes libres de PFOA/PFAS', 'Piezas desmontables y fáciles de limpiar'],
+      pros: ['Inversión baja', 'Ocupa poco espacio'],
+      contras: ['Menor capacidad y control de funciones', 'Acabados normalmente más ligeros']
+    },
+    media: {
+      paraQuien: 'Uso frecuente en el día a día con buena durabilidad.',
+      specs: ['Control preciso de temperatura o programas', 'Nivel de ruido (dB) y clase energética', 'Accesorios incluidos y piezas aptas para lavavajillas'],
+      pros: ['Suele equilibrar bien potencia y consumo', 'Más programas útiles'],
+      contras: ['Ocupa más espacio', 'Revisa que haya repuestos disponibles']
+    },
+    premium: {
+      paraQuien: 'Quien lo usa a diario y busca durabilidad y control.',
+      specs: ['Materiales robustos (acero inoxidable, cerámica de calidad)', 'Conectividad o programas avanzados', 'Garantía ampliada y servicio técnico'],
+      pros: ['Construcción normalmente más duradera', 'Mayor precisión y capacidad'],
+      contras: ['Precio y tamaño mayores', 'Más funciones de las que muchos usuarios necesitan']
+    }
+  },
+  'Deportes y Moda': {
+    basica: {
+      paraQuien: 'Uso casual o para iniciarte en una actividad.',
+      specs: ['Talla y ajuste (consulta siempre la tabla de tallas del vendedor)', 'Materiales transpirables o adecuados a la estación', 'Uso previsto claro (calle, gimnasio, running, montaña)'],
+      pros: ['Precio asequible', 'Suficiente para empezar'],
+      contras: ['Menor amortiguación o durabilidad', 'Costuras y materiales más básicos']
+    },
+    media: {
+      paraQuien: 'Práctica regular con buen confort y durabilidad.',
+      specs: ['Amortiguación, suela o tejido técnico según el uso', 'Ajuste y sujeción estables', 'Cuidados de lavado y mantenimiento indicados'],
+      pros: ['Mayor confort y durabilidad', 'Buen equilibrio entre tecnología y precio'],
+      contras: ['Revisa opiniones sobre el tallaje real', 'Menos tecnología que la gama alta']
+    },
+    premium: {
+      paraQuien: 'Deportistas o usuarios exigentes con uso intensivo.',
+      specs: ['Tecnologías específicas (amortiguación avanzada, membranas, tejidos técnicos)', 'Peso, transpirabilidad y estabilidad optimizados', 'Materiales y costuras de alta calidad'],
+      pros: ['Mejor rendimiento y comodidad', 'Mayor vida útil esperable'],
+      contras: ['Precio elevado', 'Puede ser excesivo para uso ocasional']
+    }
+  }
+};
+
+const TIERS = [
+  { id: 'basica', etiqueta: '🌱 Gama económica', nombre: 'Gama básica', badge: 'bg-slate-100 text-slate-800 border-slate-200' },
+  { id: 'media', etiqueta: '⚖️ Gama calidad-precio', nombre: 'Gama calidad-precio', badge: 'bg-orange-100 text-orange-800 border-orange-300 font-bold' },
+  { id: 'premium', etiqueta: '⭐ Gama premium', nombre: 'Gama alta', badge: 'bg-amber-100 text-amber-900 border-amber-300' }
+];
+
+/* Modificadores de búsqueda distintos por gama (tipo específico > categoría) */
+const MODS_CATEGORIA = {
+  'Tecnología': { basica: 'baratos buena valoracion', media: 'calidad precio recomendados', premium: 'alta gama premium' },
+  'Salud y belleza': { basica: 'economico uso diario', media: 'calidad precio dermatologicamente testado', premium: 'alta gama formula avanzada' },
+  'Hogar': { basica: 'compacto economico', media: 'calidad precio programas', premium: 'alta gama acero inoxidable' },
+  'Deportes y Moda': { basica: 'baratas uso casual', media: 'calidad precio comodas', premium: 'alta gama tecnicas' }
+};
+
+const TIPOS = [
+  { re: /\b(auricular|casco|headphone|earbud)/, cat: 'Tecnología', img: 'photo-1505740420928-5e560c06d30e',
+    mods: { basica: 'bluetooth diadema baratos', media: 'cancelacion ruido calidad precio', premium: 'alta gama hi-fi' },
+    specs: { basica: ['Bluetooth 5.x y autonomía de al menos 20 h', 'Micrófono integrado para llamadas', 'Comodidad y peso (importante para sesiones largas)'],
+             media: ['Cancelación activa de ruido (ANC) y modo transparencia', 'Códecs de audio (AAC, aptX o LDAC según tu móvil)', 'Autonomía de 30 h o más y conexión multipunto'],
+             premium: ['Drivers de gran tamaño y respuesta de frecuencia amplia', 'Códecs de alta resolución (LDAC, aptX Adaptive)', 'ANC avanzada, audio espacial y materiales premium'] } },
+  { re: /\b(movil|celular|smartphone|iphone|android)/, cat: 'Tecnología', img: 'photo-1511707171634-5f897ff02aa9',
+    mods: { basica: 'libre gama de entrada bateria', media: 'libre gama media 5g', premium: 'libre gama alta camara' } },
+  { re: /\b(portatil|ordenador|laptop|pc|teclado|raton|monitor)/, cat: 'Tecnología', img: 'photo-1496181133206-80ce9b88a853',
+    mods: { basica: 'basico estudiar oficina', media: 'calidad precio ssd 16gb', premium: 'alto rendimiento profesional' } },
+  { re: /\b(freidora)/, cat: 'Hogar', img: 'photo-1556911220-e15b29be8c8f',
+    mods: { basica: 'aire 3 litros compacta', media: 'aire 5 litros digital', premium: 'aire doble cesta 9 litros' } },
+  { re: /\b(cafetera)/, cat: 'Hogar', img: 'photo-1556911220-e15b29be8c8f',
+    mods: { basica: 'goteo economica', media: 'capsulas calidad precio', premium: 'superautomatica molinillo' } },
+  { re: /\b(batidora|robot de cocina|sarten)/, cat: 'Hogar', img: 'photo-1556911220-e15b29be8c8f' },
+  { re: /\b(puf|sofa|silla|mueble|cama|estanteria|colchon)/, cat: 'Hogar', img: 'photo-1555041469-a586c61ea9bc' },
+  { re: /\b(crema|champu|pelo|piel|serum|perfume|maquillaje|facial)/, cat: 'Salud y belleza', img: 'photo-1556228720-195a672e8a03' },
+  { re: /\b(zapatilla|deporte|bici|pelota|camiseta|ropa|pantalon|running)/, cat: 'Deportes y Moda', img: 'photo-1542291026-7eec264c27ff' }
+];
+
+function clasificar(texto) {
+  const t = normalizar(texto);
+  const tipo = TIPOS.find(x => x.re.test(t));
+  if (tipo) return { cat: tipo.cat, tipo, img: `https://${IMG_HOST}/${tipo.img}?auto=format&fit=crop&q=80&w=600` };
+  return { cat: 'Tecnología', tipo: null, img: IMG_DEFAULT };
+}
+
+function generarGamas(texto, info) {
+  const base = normalizar(texto);
+  const nombre = capitalizar(texto);
+  const plantilla = PLANTILLAS[info.cat] || PLANTILLAS['Tecnología'];
+  const mods = { ...(MODS_CATEGORIA[info.cat] || MODS_CATEGORIA['Tecnología']), ...(info.tipo?.mods || {}) };
+
+  return TIERS.map(t => {
+    const p = plantilla[t.id];
+    return {
+      etiqueta: t.etiqueta,
+      titulo: `${nombre} - ${t.nombre}`,
+      consulta: `${base} ${mods[t.id]}`.trim(),
+      paraQuien: p.paraQuien,
+      specs: info.tipo?.specs?.[t.id] || p.specs,
+      pros: p.pros,
+      contras: p.contras,
+      badge: t.badge
+    };
+  });
+}
+
+/* El contenido mostrado SIEMPRE se genera aquí a partir del título (nunca se confía en el texto guardado en la base de datos) */
+function gamasDeProducto(p) {
+  const base = String(p.titulo).replace(/\s*-\s*Comparativa Top 3\s*$/i, '').trim();
+  const clasif = clasificar(base);
+  const cat = PLANTILLAS[p.categoria] ? p.categoria : clasif.cat;
+  return generarGamas(base, { cat, tipo: clasif.tipo });
+}
+
+/* ============================================================
+   CARGA Y RENDER
+   ============================================================ */
+function renderCategorias() {
+  document.getElementById('categorias').innerHTML = CATEGORIAS.map(c => {
+    const activa = c.id === categoriaActual;
+    const cls = activa
+      ? 'bg-orange-600 text-white shadow-sm'
+      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200';
+    return `<button type="button" data-cat="${esc(c.id)}" class="px-5 py-2.5 rounded-full font-medium text-sm transition ${cls}">${esc(c.label)}</button>`;
+  }).join('');
+}
+
+async function cargarProductos(filtroTexto = '') {
+  const loadingEl = document.getElementById('loading');
+  const gridEl = document.getElementById('productosGrid');
+  const contadorEl = document.getElementById('contadorResultados');
+  loadingEl.classList.remove('hidden');
+  gridEl.innerHTML = '';
+
+  try {
+    let query = supabaseClient.from(TABLA).select('*').order('created_at', { ascending: false });
+    if (categoriaActual !== 'Todas') query = query.eq('categoria', categoriaActual);
+    const f = limpiarBusqueda(filtroTexto).replace(/[%_]/g, '');
+    if (f) query = query.ilike('titulo', `%${f}%`);
+
+    const { data, error } = await query;
+    loadingEl.classList.add('hidden');
+
+    if (error) {
+      console.error(error);
+      gridEl.innerHTML = `<p class="col-span-full text-red-500 text-center">Error al conectar con la base de datos.</p>`;
+      return [];
+    }
+
+    mapaProductos.clear();
+    const productos = data || [];
+    productos.forEach(p => mapaProductos.set(String(p.id), p));
+    contadorEl.textContent = `${productos.length} ${productos.length === 1 ? 'guía' : 'guías'}`;
+
+    if (productos.length === 0) {
+      gridEl.innerHTML = `
+        <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
+          <p class="text-slate-600 text-lg mb-2">No hay guías para esta selección.</p>
+          <p class="text-slate-400 text-sm">Usa el buscador para generar la guía de un producto.</p>
+        </div>`;
+      return [];
+    }
+
+    gridEl.innerHTML = productos.map(p => `
+      <article data-id="${esc(p.id)}" tabindex="0" role="button"
+        class="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col justify-between hover:shadow-xl transition duration-300 cursor-pointer">
+        <div>
+          <div class="relative">
+            <img src="${esc(imgSegura(p.imagen_url))}" alt="Imagen ilustrativa: ${esc(p.titulo)}" loading="lazy" class="w-full h-48 object-cover" data-fallback>
+            <span class="absolute bottom-2 right-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded">Imagen ilustrativa</span>
+          </div>
+          <div class="p-5">
+            <span class="text-xs font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">${esc(p.categoria)}</span>
+            <h4 class="font-bold text-lg text-slate-800 mt-3 mb-2 line-clamp-2">${esc(p.titulo)}</h4>
+            <p class="text-slate-600 text-sm mb-4 leading-relaxed">Qué mirar en la gama económica, la de calidad-precio y la premium.</p>
+          </div>
+        </div>
+        <div class="px-5 py-3 flex items-center justify-between border-t border-slate-100 bg-slate-50/50">
+          <span class="text-xs text-slate-400">Consultada <strong>${Number(p.clics) || 0}</strong> veces</span>
+          <span class="bg-orange-600 text-white font-semibold px-4 py-2 rounded-xl text-sm">Ver guía</span>
+        </div>
+      </article>`).join('');
+
+    gridEl.querySelectorAll('img[data-fallback]').forEach(img => {
+      img.addEventListener('error', () => { img.src = IMG_DEFAULT; }, { once: true });
+    });
+    return productos;
+  } catch (err) {
+    console.error(err);
+    loadingEl.classList.add('hidden');
+    gridEl.innerHTML = `<p class="col-span-full text-red-500 text-center">Error al procesar la lista de productos.</p>`;
+    return [];
+  }
+}
+
+/* ============================================================
+   BÚSQUEDA / CREACIÓN
+   ============================================================ */
+async function buscarOCrear() {
+  mostrarMensaje('');
+  const texto = limpiarBusqueda(document.getElementById('searchInput').value);
+  if (!texto) { await cargarProductos(); return; }
+
+  const errorValidacion = validarBusqueda(texto);
+  if (errorValidacion) { mostrarMensaje(errorValidacion); return; }
+
+  const loadingEl = document.getElementById('loading');
+  loadingEl.classList.remove('hidden');
+
+  try {
+    const clave = texto.replace(/[%_]/g, '');
+    const { data: existentes, error: errBuscar } = await supabaseClient
+      .from(TABLA).select('id').ilike('titulo', `%${clave}%`).limit(1);
+    if (errBuscar) throw errBuscar;
+
+    if (!existentes || existentes.length === 0) {
+      if (Date.now() - ultimaCreacion < 8000) {
+        loadingEl.classList.add('hidden');
+        mostrarMensaje('Espera unos segundos antes de generar otra guía.');
+        return;
+      }
+      const info = clasificar(texto);
+      const gamas = generarGamas(texto, info);
+      const nuevo = {
+        titulo: `${capitalizar(texto)}${SUFIJO_TITULO}`,
+        descripcion: JSON.stringify({ v: 2, gamas }),
+        enlace_amazon: urlAmazon(texto),
+        imagen_url: info.img,
+        categoria: info.cat,
+        clics: 0
+      };
+      const { error: errInsert } = await supabaseClient.from(TABLA).insert([nuevo]);
+      if (errInsert) throw errInsert;
+      ultimaCreacion = Date.now();
+      categoriaActual = 'Todas';
+      renderCategorias();
+    }
+    loadingEl.classList.add('hidden');
+    await cargarProductos(texto);
+  } catch (err) {
+    console.error('Error al buscar o crear guía:', err);
+    loadingEl.classList.add('hidden');
+    document.getElementById('productosGrid').innerHTML =
+      `<p class="col-span-full text-red-500 text-center">No se pudo completar la búsqueda. Inténtalo de nuevo.</p>`;
+  }
+}
+
+/* ============================================================
+   MODAL DE GUÍA (el id del producto vive en el propio DOM del modal)
+   ============================================================ */
+function listaHtml(items, icono) {
+  return (items || []).map(i => `<li>${icono} ${esc(i)}</li>`).join('');
+}
+
+function abrirModal(idStr) {
+  const p = mapaProductos.get(String(idStr));
+  if (!p) return;
+
+  const modal = document.getElementById('modalDetalle');
+  modal.dataset.productId = String(p.id);
+
+  document.getElementById('modalTitulo').textContent = p.titulo;
+  document.getElementById('modalCategoria').textContent = p.categoria;
+  document.getElementById('modalClics').textContent = Number(p.clics) || 0;
+
+  document.getElementById('modalTop3Contenedor').innerHTML = gamasDeProducto(p).map(g => `
+    <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:border-orange-200 transition">
+      <span class="inline-block text-xs px-2.5 py-1 rounded-md border ${esc(g.badge)} mb-2">${esc(g.etiqueta)}</span>
+      <h5 class="font-bold text-slate-800 text-base">${esc(g.titulo)}</h5>
+      <p class="text-xs text-slate-500 mb-3"><strong>Ideal para:</strong> ${esc(g.paraQuien)}</p>
+
+      <p class="text-xs font-semibold text-slate-700 mb-1">Qué mirar:</p>
+      <ul class="text-xs text-slate-600 space-y-1 mb-3">${listaHtml(g.specs, '🔹')}</ul>
+
+      <div class="grid sm:grid-cols-2 gap-3 text-xs mb-4">
+        <div><p class="font-semibold text-green-700 mb-1">Ventajas habituales</p><ul class="space-y-1 text-slate-600">${listaHtml(g.pros, '✅')}</ul></div>
+        <div><p class="font-semibold text-red-700 mb-1">Inconvenientes habituales</p><ul class="space-y-1 text-slate-600">${listaHtml(g.contras, '⚠️')}</ul></div>
+      </div>
+
+      <a data-track="1" href="${esc(urlSegura(urlAmazon(g.consulta)))}" target="_blank"
+         rel="sponsored nofollow noopener noreferrer"
+         class="block text-center px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm shadow-sm transition">
+        Buscar en Amazon.es (enlace de afiliado - publicidad) &rarr;
+      </a>
+    </div>`).join('');
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function cerrarModales() {
+  ['modalDetalle', 'legalModal'].forEach(id => {
+    const m = document.getElementById(id);
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+  });
+  delete document.getElementById('modalDetalle').dataset.productId;
+}
+
+async function registrarClic(idProducto) {
+  if (!idProducto || clicsContados.has(idProducto)) return;
+  clicsContados.add(idProducto);
+  try {
+    await supabaseClient.rpc('incrementar_clics', { p_id: String(idProducto) });
+  } catch (e) { /* no bloquear la navegación */ }
+}
+
+/* ============================================================
+   INFORMACIÓN LEGAL
+   ============================================================ */
+function dato(valor) {
+  const v = esc(valor);
+  return String(valor).startsWith('[') ? `<mark class="bg-yellow-200 px-1 rounded">${v}</mark>` : v;
+}
+
+function renderLegal() {
+  document.getElementById('legalContenido').innerHTML = `
+    <section id="legal-afiliados">
+      <h4 class="font-bold text-slate-900 text-base mb-2">Aviso de afiliación</h4>
+      <p>En calidad de Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables.</p>
+      <p class="mt-2">Smartchollo participa en el Programa de Afiliados de Amazon EU, un programa de publicidad que permite a los sitios web obtener comisiones por enlazar a Amazon.es. Los botones "Buscar en Amazon.es" son enlaces de afiliado y constituyen publicidad: si realizas una compra tras pulsarlos, puedo recibir una comisión sin coste adicional para ti. Las guías son orientativas, no recomiendan un producto concreto y no incluyen precios ni valoraciones: consulta siempre la información actualizada en Amazon.es antes de comprar.</p>
+      <p class="mt-2">Smartchollo es un sitio independiente: no es propiedad de Amazon ni está respaldado por Amazon. Amazon y el logotipo de Amazon son marcas comerciales de Amazon.com, Inc. o sus afiliadas.</p>
+    </section>
+
+    <section id="legal-aviso">
+      <h4 class="font-bold text-slate-900 text-base mb-2">Aviso legal</h4>
+      <p>En cumplimiento de la Ley 34/2002 (LSSI-CE), se informa de que este sitio web (${dato(LEGAL.dominio)}) es titularidad de:</p>
+      <ul class="mt-2 space-y-1">
+        <li><strong>Titular:</strong> ${dato(LEGAL.nombre)}</li>
+        <li><strong>NIF/CIF:</strong> ${dato(LEGAL.nif)}</li>
+        <li><strong>Domicilio:</strong> ${dato(LEGAL.domicilio)}</li>
+        <li><strong>Contacto:</strong> ${dato(LEGAL.email)}</li>
+      </ul>
+      <p class="mt-2">Los contenidos de esta web tienen carácter informativo y orientativo. El titular no se responsabiliza de las decisiones de compra ni del contenido, precios o disponibilidad de las webs de terceros enlazadas. Los textos y el diseño son propiedad del titular; las marcas mencionadas pertenecen a sus respectivos dueños.</p>
+    </section>
+
+    <section id="legal-privacidad">
+      <h4 class="font-bold text-slate-900 text-base mb-2">Política de privacidad</h4>
+      <p><strong>Responsable:</strong> ${dato(LEGAL.nombre)} (${dato(LEGAL.email)}).</p>
+      <p class="mt-2"><strong>Datos que se tratan:</strong> Smartchollo no tiene cuentas de usuario ni formularios de registro. Solo se tratan: (1) el término de búsqueda que escribes cuando generas una guía, que se guarda y se publica en la web, por lo que no debes incluir datos personales; y (2) un contador anónimo de consultas por guía, sin identificar a la persona.</p>
+      <p class="mt-2"><strong>Finalidad y base jurídica:</strong> generar y mostrar guías de compra y medir su uso de forma agregada (interés legítimo, art. 6.1.f RGPD).</p>
+      <p class="mt-2"><strong>Terceros que intervienen:</strong> Supabase (base de datos), Cloudflare o GitHub (alojamiento, que pueden registrar la dirección IP por motivos técnicos y de seguridad), jsDelivr y Tailwind CDN (carga de scripts), Unsplash (imágenes ilustrativas) y Amazon (al pulsar un enlace de afiliado pasas a su web, que se rige por su propia política de privacidad y cookies).</p>
+      <p class="mt-2"><strong>Programa de afiliados:</strong> Smartchollo participa en el Programa de Afiliados de Amazon. Smartchollo no recibe de Amazon datos personales de los compradores; solo informes agregados de comisiones.</p>
+      <p class="mt-2"><strong>Derechos:</strong> puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a ${dato(LEGAL.email)}, y reclamar ante la Agencia Española de Protección de Datos (aepd.es). Si quieres que se elimine una guía, indícalo en el mismo correo.</p>
+      <p class="mt-2 text-xs text-slate-500">Última actualización: ${esc(LEGAL.actualizado)}.</p>
+    </section>
+
+    <section id="legal-cookies">
+      <h4 class="font-bold text-slate-900 text-base mb-2">Política de cookies</h4>
+      <p>Smartchollo no utiliza cookies propias, ni de analítica, ni de publicidad, y no guarda información en tu navegador (cookies, localStorage o sessionStorage). Los recursos de terceros que se cargan (alojamiento, CDN e imágenes) pueden registrar datos técnicos como la IP.</p>
+      <p class="mt-2">Al pulsar un enlace de afiliado y abrir Amazon.es, Amazon puede instalar sus propias cookies (incluidas las necesarias para atribuir la comisión de afiliado). Esas cookies se rigen por la política de Amazon, y puedes gestionarlas desde su web o desde la configuración de tu navegador.</p>
+    </section>`;
+}
+
+function abrirLegal(seccion) {
+  const modal = document.getElementById('legalModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  const destino = document.getElementById(`legal-${seccion}`);
+  if (destino) destino.scrollIntoView({ block: 'start' });
+}
+
+/* ============================================================
+   EVENTOS (delegación: ningún listener por tarjeta)
+   ============================================================ */
+document.getElementById('productosGrid').addEventListener('click', e => {
+  const card = e.target.closest('[data-id]');
+  if (card) abrirModal(card.dataset.id);
+});
+document.getElementById('productosGrid').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('[data-id]');
+  if (card) { e.preventDefault(); abrirModal(card.dataset.id); }
+});
+
+['modalDetalle', 'legalModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    const modal = e.currentTarget;
+    if (e.target === modal || e.target.closest('[data-action="cerrar"]')) { cerrarModales(); return; }
+    if (e.target.closest('a[data-track]')) registrarClic(modal.dataset.productId);
+  });
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModales(); });
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-legal]');
+  if (btn) abrirLegal(btn.dataset.legal);
+});
+
+document.getElementById('categorias').addEventListener('click', e => {
+  const btn = e.target.closest('[data-cat]');
+  if (!btn) return;
+  categoriaActual = btn.dataset.cat;
+  document.getElementById('categoriaTitulo').textContent =
+    categoriaActual === 'Todas' ? 'Selección destacada' : `Artículos en ${categoriaActual}`;
+  renderCategorias();
+  cargarProductos(document.getElementById('searchInput').value);
+});
+
+document.getElementById('searchBtn').addEventListener('click', buscarOCrear);
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') buscarOCrear(); });
+document.getElementById('logoBtn').addEventListener('click', () => {
+  categoriaActual = 'Todas';
+  document.getElementById('searchInput').value = '';
+  mostrarMensaje('');
+  document.getElementById('categoriaTitulo').textContent = 'Selección destacada';
+  renderCategorias();
+  cargarProductos();
+});
+
+window.addEventListener('DOMContentLoaded', () => { renderLegal(); renderCategorias(); cargarProductos(); });
+</script>
+</body>
+</html>
