@@ -31,7 +31,7 @@
                     <input 
                         type="text" 
                         id="searchInput" 
-                        placeholder="Ej. Robot aspirador, Champú anticaída, Auriculares bluetooth..." 
+                        placeholder="Ej. Serum facial, Auriculares con cable, Freidora..." 
                         class="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 text-slate-800"
                     >
                     <button 
@@ -96,7 +96,7 @@
         </p>
     </footer>
 
-    <!-- Script de Supabase y Generador Inteligente -->
+    <!-- Script de Supabase y Generador Dinámico de Enlaces -->
     <script>
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
@@ -137,11 +137,17 @@
 
             productosCargados = data || [];
 
+            // Si está vacía, inicializamos con elementos de prueba cuyos enlaces son independientes
+            if (productosCargados.length === 0 && !filtroTexto && categoriaFiltro === 'Todas') {
+                await inicializarCatalogoProfesional();
+                return;
+            }
+
             if (!productosCargados || productosCargados.length === 0) {
                 gridEl.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-                        <p class="text-slate-600 text-lg mb-2">No había registros en la base de datos para "${filtroTexto || categoriaFiltro}".</p>
-                        <p class="text-slate-400 text-sm mb-6">Utiliza el botón de búsqueda arriba para generar la oferta automáticamente en Amazon.</p>
+                        <p class="text-slate-600 text-lg mb-2">No hay registros para "${filtroTexto || categoriaFiltro}".</p>
+                        <p class="text-slate-400 text-sm mb-6">Utiliza el buscador arriba para generar la oferta automáticamente con su enlace personalizado.</p>
                     </div>`;
                 contadorEl.innerText = `0 chollos`;
                 return;
@@ -174,6 +180,30 @@
             });
         }
 
+        async function inicializarCatalogoProfesional() {
+            const catalogoInicial = [
+                {
+                    titulo: "Auriculares con cable de alta fidelidad",
+                    descripcion: "Auriculares estéreo con conectividad por cable, micrófono integrado y diseño ergonómico para uso prolongado.",
+                    enlace_amazon: "https://www.amazon.es/s?k=auriculares+con+cable&tag=smartchollo-21",
+                    imagen_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600",
+                    categoria: "Tecnología",
+                    clics: 0
+                },
+                {
+                    titulo: "Serum Facial Hidratante con Ácido Hialurónico",
+                    descripcion: "Fórmula de rápida absorción recomendada para el cuidado diario de la piel y la hidratación profunda.",
+                    enlace_amazon: "https://www.amazon.es/s?k=serum+facial+hidratante&tag=smartchollo-21",
+                    imagen_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600",
+                    categoria: "Salud y belleza",
+                    clics: 0
+                }
+            ];
+
+            await supabaseClient.from('productos').insert(catalogoInicial);
+            cargarProductos();
+        }
+
         async function buscarOCrearChollo() {
             const texto = document.getElementById('searchInput').value.trim();
             if (!texto) {
@@ -186,7 +216,6 @@
             loadingEl.classList.remove('hidden');
             gridEl.innerHTML = '';
 
-            // 1. Buscar si ya existe en Supabase
             let query = supabaseClient.from('productos').select('*').ilike('titulo', `%${texto}%`);
             if (categoriaActual !== 'Todas') query = query.eq('categoria', categoriaActual);
             
@@ -198,25 +227,22 @@
                 return;
             }
 
-            // 2. Si NO existe, obtener datos reales mediante la API libre de información
             const textoLower = texto.toLowerCase();
             const nombreCapitalizado = texto.charAt(0).toUpperCase() + texto.slice(1);
 
             let categoriaAsignada = 'Tecnología';
             let urlImagen = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=600';
 
-            if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza') || textoLower.includes('serum') || textoLower.includes('perfume')) {
+            if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza') || textoLower.includes('serum')) {
                 categoriaAsignada = 'Salud y belleza';
                 urlImagen = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600';
-            } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('lámpara') || textoLower.includes('hogar') || textoLower.includes('mueble') || textoLower.includes('robot') || textoLower.includes('cafetera')) {
+            } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('hogar') || textoLower.includes('mueble') || textoLower.includes('robot')) {
                 categoriaAsignada = 'Hogar';
                 urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
             }
 
             let descripcionObtenida = '';
-
             try {
-                // Consulta gratuita a la API de enciclopedia para extraer descripción real del producto
                 const resp = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(texto)}`);
                 if (resp.ok) {
                     const wikiData = await resp.json();
@@ -224,28 +250,24 @@
                         descripcionObtenida = wikiData.extract;
                     }
                 }
-            } catch (e) {
-                console.log("Generando descripción comercial por defecto");
-            }
+            } catch (e) {}
 
-            // Si la consulta no devuelve texto específico, se genera una descripción comercial limpia
             if (!descripcionObtenida) {
-                descripcionObtenida = `Ficha técnica y oferta recomendada para "${nombreCapitalizado}". Seleccionado por su elevada demanda en Amazon, excelentes valoraciones de usuarios y una relación calidad-precio sobresaliente en la categoría de ${categoriaAsignada.toLowerCase()}.`;
+                descripcionObtenida = `Ficha técnica y oferta recomendada para "${nombreCapitalizado}". Seleccionado por su alta demanda y excelentes valoraciones en Amazon.`;
             }
 
-            // Enlace de búsqueda directo en Amazon con tu ID de Afiliado oficial
+            // ENLACE DINÁMICO ÚNICO BASADO EXACTAMENTE EN EL TÉRMINO BUSCADO
             const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
 
             const nuevoProducto = {
                 titulo: `${nombreCapitalizado} - Oferta Recomendada`,
                 descripcion: descripcionObtenida,
-                enlace_amazon: enlaceAfiliadoAmazon,
+                enlace_amazon: enlaceAfiliadoAmazon, // <-- Enlace único y personalizado para este producto
                 imagen_url: urlImagen,
                 categoria: categoriaAsignada,
                 clics: 0
             };
 
-            // 3. Guardar automáticamente en Supabase
             await supabaseClient.from('productos').insert([nuevoProducto]);
             
             loadingEl.classList.add('hidden');
@@ -277,7 +299,7 @@
             document.getElementById('modalClics').innerText = producto.clics || 0;
             
             const btnAmazon = document.getElementById('modalEnlaceAmazon');
-            btnAmazon.href = producto.enlace_amazon;
+            btnAmazon.href = producto.enlace_amazon; // Aplica el enlace único guardado en la base de datos
             btnAmazon.onclick = () => registrarClic(producto.id);
 
             document.getElementById('modalDetalle').classList.remove('hidden');
