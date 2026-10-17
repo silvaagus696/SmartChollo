@@ -31,7 +31,7 @@
                     <input 
                         type="text" 
                         id="searchInput" 
-                        placeholder="Ej. Freidora de aire, Auriculares bluetooth, Serum facial..." 
+                        placeholder="Ej. Freidora de aire, Auriculares bluetooth, Puf, Serum..." 
                         class="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 text-slate-800"
                     >
                     <button 
@@ -96,7 +96,7 @@
         </p>
     </footer>
 
-    <!-- Script de Supabase Sin Precarga Predeterminada -->
+    <!-- Script de Supabase y Selección Dinámica de Imágenes -->
     <script>
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
@@ -137,12 +137,11 @@
 
             productosCargados = data || [];
 
-            // Si no hay productos guardados, se muestra una interfaz limpia de bienvenida
             if (!productosCargados || productosCargados.length === 0) {
                 gridEl.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-                        <p class="text-slate-600 text-lg mb-2">Escribe cualquier producto en el buscador para generar su guía comparativa.</p>
-                        <p class="text-slate-400 text-sm">Ejemplo: "Cafetera de cápsulas", "Aspirador robot", "Gafas de sol"...</p>
+                        <p class="text-slate-600 text-lg mb-2">No hay artículos guardados todavía.</p>
+                        <p class="text-slate-400 text-sm">Escribe cualquier producto en el buscador arriba para generar su comparativa automáticamente.</p>
                     </div>`;
                 contadorEl.innerText = `0 artículos`;
                 return;
@@ -202,12 +201,19 @@
             const nombreCapitalizado = texto.charAt(0).toUpperCase() + texto.slice(1);
 
             let categoriaAsignada = 'Tecnología';
-            let urlImagen = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=600';
+            // Imagen temática adaptada según la palabra buscada
+            let urlImagen = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=600'; // Móvil / Tecnología general
 
-            if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('maquillaje') || textoLower.includes('salud') || textoLower.includes('belleza') || textoLower.includes('serum')) {
+            if (textoLower.includes('auricular') || textoLower.includes('cascos') || textoLower.includes('headphone')) {
+                categoriaAsignada = 'Tecnología';
+                urlImagen = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600';
+            } else if (textoLower.includes('puf') || textoLower.includes('sofa') || textoLower.includes('silla') || textoLower.includes('mueble') || textoLower.includes('decoracion')) {
+                categoriaAsignada = 'Hogar';
+                urlImagen = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=600';
+            } else if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('serum') || textoLower.includes('belleza')) {
                 categoriaAsignada = 'Salud y belleza';
                 urlImagen = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600';
-            } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('hogar') || textoLower.includes('mueble') || textoLower.includes('robot')) {
+            } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('hogar') || textoLower.includes('robot')) {
                 categoriaAsignada = 'Hogar';
                 urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
             }
@@ -224,6 +230,7 @@
                 </p>
             `;
 
+            // Enlace dinámico directo para este término de búsqueda
             const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
 
             const nuevoProducto = {
