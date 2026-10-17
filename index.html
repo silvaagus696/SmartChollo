@@ -96,7 +96,7 @@
         </p>
     </footer>
 
-    <!-- Script de Supabase y Fix de Enlaces en Pantalla Principal -->
+    <!-- Script de Supabase y Búsqueda Robusta -->
     <script>
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
@@ -117,69 +117,72 @@
             loadingEl.classList.remove('hidden');
             gridEl.innerHTML = '';
 
-            let query = supabaseClient.from('productos').select('*').order('created_at', { ascending: false });
+            try {
+                let query = supabaseClient.from('productos').select('*').order('created_at', { ascending: false });
 
-            if (categoriaFiltro !== 'Todas') {
-                query = query.eq('categoria', categoriaFiltro);
-            }
+                if (categoriaFiltro !== 'Todas') {
+                    query = query.eq('categoria', categoriaFiltro);
+                }
 
-            if (filtroTexto.trim() !== '') {
-                query = query.ilike('titulo', `%${filtroTexto}%`);
-            }
+                if (filtroTexto.trim() !== '') {
+                    query = query.ilike('titulo', `%${filtroTexto}%`);
+                }
 
-            const { data, error } = await query;
-            loadingEl.classList.add('hidden');
+                const { data, error } = await query;
+                loadingEl.classList.add('hidden');
 
-            if (error) {
-                gridEl.innerHTML = `<p class="col-span-full text-red-500 text-center">Error al conectar con la base de datos.</p>`;
-                return;
-            }
+                if (error) {
+                    gridEl.innerHTML = `<p class="col-span-full text-red-500 text-center">Error al conectar con la base de datos.</p>`;
+                    return;
+                }
 
-            // Guardamos la lista completa de productos actualizados en memoria
-            productosCargados = data || [];
+                productosCargados = data || [];
 
-            if (!productosCargados || productosCargados.length === 0) {
-                gridEl.innerHTML = `
-                    <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-                        <p class="text-slate-600 text-lg mb-2">No hay artículos guardados todavía.</p>
-                        <p class="text-slate-400 text-sm">Escribe cualquier producto en el buscador arriba para generar su comparativa automáticamente.</p>
-                    </div>`;
-                contadorEl.innerText = `0 artículos`;
-                return;
-            }
+                if (!productosCargados || productosCargados.length === 0) {
+                    gridEl.innerHTML = `
+                        <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
+                            <p class="text-slate-600 text-lg mb-2">No hay artículos guardados para esta búsqueda.</p>
+                            <p class="text-slate-400 text-sm">Prueba a buscar otro término o pulsa "Analizar Opción" para crearlo automáticamente.</p>
+                        </div>`;
+                    contadorEl.innerText = `0 artículos`;
+                    return;
+                }
 
-            contadorEl.innerText = `${productosCargados.length} artículos encontrados`;
+                contadorEl.innerText = `${productosCargados.length} artículos encontrados`;
 
-            productosCargados.forEach(producto => {
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col justify-between hover:shadow-xl transition duration-300 cursor-pointer';
-                
-                // Pasamos la ID del producto de forma explícita
-                card.setAttribute('data-id', producto.id);
-                card.onclick = () => abrirModalPorId(producto.id);
-                
-                card.innerHTML = `
-                    <div>
-                        <img src="${producto.imagen_url}" alt="${producto.titulo}" class="w-full h-48 object-cover" onError="this.src='https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600'">
-                        <div class="p-5">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">${producto.categoria}</span>
-                            <h4 class="font-bold text-lg text-slate-800 mt-3 mb-2 line-clamp-2">${producto.titulo}</h4>
-                            <p class="text-slate-600 text-sm line-clamp-3 mb-4 leading-relaxed">${producto.descripcion.replace(/<[^>]*>?/gm, '')}</p>
+                productosCargados.forEach(producto => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col justify-between hover:shadow-xl transition duration-300 cursor-pointer';
+                    card.onclick = () => abrirModalPorId(producto.id);
+                    
+                    card.innerHTML = `
+                        <div>
+                            <img src="${producto.imagen_url}" alt="${producto.titulo}" class="w-full h-48 object-cover" onError="this.src='https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600'">
+                            <div class="p-5">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">${producto.categoria}</span>
+                                <h4 class="font-bold text-lg text-slate-800 mt-3 mb-2 line-clamp-2">${producto.titulo}</h4>
+                                <p class="text-slate-600 text-sm line-clamp-3 mb-4 leading-relaxed">${producto.descripcion.replace(/<[^>]*>?/gm, '')}</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="p-5 pt-0 flex items-center justify-between border-t border-slate-100 mt-auto bg-slate-50/50 py-3">
-                        <span class="text-xs text-slate-400">Popularidad: <strong>${producto.clics || 0} consultas</strong></span>
-                        <button class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">
-                            Ver Guía de Compra
-                        </button>
-                    </div>
-                `;
-                gridEl.appendChild(card);
-            });
+                        <div class="p-5 pt-0 flex items-center justify-between border-t border-slate-100 mt-auto bg-slate-50/50 py-3">
+                            <span class="text-xs text-slate-400">Popularidad: <strong>${producto.clics || 0} consultas</strong></span>
+                            <button class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">
+                                Ver Guía de Compra
+                            </button>
+                        </div>
+                    `;
+                    gridEl.appendChild(card);
+                });
+            } catch (err) {
+                loadingEl.classList.add('hidden');
+                gridEl.innerHTML = `<p class="col-span-full text-red-500 text-center">Error inesperado al cargar datos.</p>`;
+            }
         }
 
         async function buscarOCrearChollo() {
-            const texto = document.getElementById('searchInput').value.trim();
+            const inputEl = document.getElementById('searchInput');
+            const texto = inputEl ? inputEl.value.trim() : '';
+            
             if (!texto) {
                 cargarProductos('', categoriaActual);
                 return;
@@ -190,64 +193,71 @@
             loadingEl.classList.remove('hidden');
             gridEl.innerHTML = '';
 
-            let query = supabaseClient.from('productos').select('*').ilike('titulo', `%${texto}%`);
-            if (categoriaActual !== 'Todas') query = query.eq('categoria', categoriaActual);
-            
-            let { data } = await query;
+            try {
+                // 1. Comprobar si existe en Supabase
+                let query = supabaseClient.from('productos').select('*').ilike('titulo', `%${texto}%`);
+                if (categoriaActual !== 'Todas') query = query.eq('categoria', categoriaActual);
+                
+                let { data, error } = await query;
 
-            if (data && data.length > 0) {
+                if (data && data.length > 0) {
+                    loadingEl.classList.add('hidden');
+                    cargarProductos(texto, categoriaActual);
+                    return;
+                }
+
+                // 2. Si no existe, lo creamos dinámicamente
+                const textoLower = texto.toLowerCase();
+                const nombreCapitalizado = texto.charAt(0).toUpperCase() + texto.slice(1);
+
+                let categoriaAsignada = 'Tecnología';
+                let urlImagen = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=600';
+
+                if (textoLower.includes('auricular') || textoLower.includes('cascos') || textoLower.includes('headphone')) {
+                    categoriaAsignada = 'Tecnología';
+                    urlImagen = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600';
+                } else if (textoLower.includes('puf') || textoLower.includes('sofa') || textoLower.includes('silla') || textoLower.includes('mueble') || textoLower.includes('decoracion')) {
+                    categoriaAsignada = 'Hogar';
+                    urlImagen = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=600';
+                } else if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('serum') || textoLower.includes('belleza')) {
+                    categoriaAsignada = 'Salud y belleza';
+                    urlImagen = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600';
+                } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('hogar') || textoLower.includes('robot')) {
+                    categoriaAsignada = 'Hogar';
+                    urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
+                }
+
+                const comparativaTexto = `
+                    <p class="font-medium text-slate-800 mb-2">Puntos clave a considerar para la compra de <strong>"${nombreCapitalizado}"</strong>:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-600 mb-3">
+                        <li><strong>Gama Básica:</strong> Opción funcional enfocada en presupuestos ajustados.</li>
+                        <li><strong>Opción Recomendada Calidad-Precio:</strong> Alternativa con equilibrio superior en materiales, practicidad y demanda general.</li>
+                        <li><strong>Gama Alta:</strong> Incorpora funcionalidades extra no indispensables para el uso cotidiano.</li>
+                    </ul>
+                    <p class="text-orange-700 font-semibold bg-orange-100/60 p-2.5 rounded-xl text-xs">
+                        💡 Consulta la disponibilidad y precio actualizado directamente en Amazon a través del enlace inferior.
+                    </p>
+                `;
+
+                const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
+
+                const nuevoProducto = {
+                    titulo: `${nombreCapitalizado} - Análisis y Selección Recomendada`,
+                    descripcion: comparativaTexto,
+                    enlace_amazon: enlaceAfiliadoAmazon,
+                    imagen_url: urlImagen,
+                    categoria: categoriaAsignada,
+                    clics: 0
+                };
+
+                await supabaseClient.from('productos').insert([nuevoProducto]);
+                
                 loadingEl.classList.add('hidden');
                 cargarProductos(texto, categoriaActual);
-                return;
+            } catch (err) {
+                loadingEl.classList.add('hidden');
+                console.error("Error en búsqueda:", err);
             }
-
-            const textoLower = texto.toLowerCase();
-            const nombreCapitalizado = texto.charAt(0).toUpperCase() + texto.slice(1);
-
-            let categoriaAsignada = 'Tecnología';
-            let urlImagen = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=600';
-
-            if (textoLower.includes('auricular') || textoLower.includes('cascos') || textoLower.includes('headphone')) {
-                categoriaAsignada = 'Tecnología';
-                urlImagen = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600';
-            } else if (textoLower.includes('puf') || textoLower.includes('sofa') || textoLower.includes('silla') || textoLower.includes('mueble') || textoLower.includes('decoracion')) {
-                categoriaAsignada = 'Hogar';
-                urlImagen = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=600';
-            } else if (textoLower.includes('crema') || textoLower.includes('champú') || textoLower.includes('pelo') || textoLower.includes('piel') || textoLower.includes('serum') || textoLower.includes('belleza')) {
-                categoriaAsignada = 'Salud y belleza';
-                urlImagen = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600';
-            } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('hogar') || textoLower.includes('robot')) {
-                categoriaAsignada = 'Hogar';
-                urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
-            }
-
-            const comparativaTexto = `
-                <p class="font-medium text-slate-800 mb-2">Puntos clave a considerar para la compra de <strong>"${nombreCapitalizado}"</strong>:</p>
-                <ul class="list-disc pl-5 space-y-1 text-slate-600 mb-3">
-                    <li><strong>Gama Básica:</strong> Opción funcional enfocada en presupuestos ajustados.</li>
-                    <li><strong>Opción Recomendada Calidad-Precio:</strong> Alternativa con equilibrio superior en materiales, practicidad y demanda general.</li>
-                    <li><strong>Gama Alta:</strong> Incorpora funcionalidades extra no indispensables para el uso cotidiano.</li>
-                </ul>
-                <p class="text-orange-700 font-semibold bg-orange-100/60 p-2.5 rounded-xl text-xs">
-                    💡 Consulta la disponibilidad y precio actualizado directamente en Amazon a través del enlace inferior.
-                </p>
-            `;
-
-            const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
-
-            const nuevoProducto = {
-                titulo: `${nombreCapitalizado} - Análisis y Selección Recomendada`,
-                descripcion: comparativaTexto,
-                enlace_amazon: enlaceAfiliadoAmazon,
-                imagen_url: urlImagen,
-                categoria: categoriaAsignada,
-                clics: 0
-            };
-
-            await supabaseClient.from('productos').insert([nuevoProducto]);
-            
-            loadingEl.classList.add('hidden');
-            cargarProductos(texto, categoriaActual);
         }
 
         function filtrarCategoria(categoria) {
@@ -264,9 +274,7 @@
             cargarProductos(textoBusqueda, categoriaActual);
         }
 
-        // BÚSQUEDA EXACTA POR ID EN LA LISTA COMPLETA
         function abrirModalPorId(id) {
-            // Buscamos estrictamente el producto seleccionado por su ID único
             const producto = productosCargados.find(p => String(p.id) === String(id));
             if (!producto) return;
 
@@ -277,11 +285,8 @@
             document.getElementById('modalClics').innerText = producto.clics || 0;
             
             const contenedorBoton = document.getElementById('modalBotonContenedor');
-            
-            // Eliminamos completamente cualquier botón previo para evitar cruce de enlaces
             contenedorBoton.querySelectorAll('a').forEach(a => a.remove());
 
-            // Creamos un botón nuevo exclusivo con el enlace de Amazon correspondiente a ESTE producto
             const nuevoEnlace = document.createElement('a');
             nuevoEnlace.id = 'modalEnlaceAmazon';
             nuevoEnlace.href = producto.enlace_amazon;
@@ -300,10 +305,12 @@
         }
 
         async function registrarClic(idProducto) {
-            const { data: productoActual } = await supabaseClient.from('productos').select('clics').eq('id', idProducto).single();
-            if (productoActual) {
-                await supabaseClient.from('productos').update({ clics: (productoActual.clics || 0) + 1 }).eq('id', idProducto);
-            }
+            try {
+                const { data: productoActual } = await supabaseClient.from('productos').select('clics').eq('id', idProducto).single();
+                if (productoActual) {
+                    await supabaseClient.from('productos').update({ clics: (productoActual.clics || 0) + 1 }).eq('id', idProducto);
+                }
+            } catch (e) {}
         }
 
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
