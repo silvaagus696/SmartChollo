@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smartchollo - Comparativa y Ofertas Inteligentes de Amazon</title>
+    <title>Smartchollo - Guía y Comparativa Calidad-Precio</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
@@ -19,14 +19,14 @@
                     <span class="text-3xl">🔥</span>
                     <h1 class="text-2xl font-black tracking-tight">Smartchollo</h1>
                 </div>
-                <p class="text-orange-100 text-sm text-center md:text-right">Buscador y comparador de ofertas en tiempo real.</p>
+                <p class="text-orange-100 text-sm text-center md:text-right">Guía independiente de recomendaciones y comparativas.</p>
             </div>
         </header>
 
         <!-- Buscador Principal -->
         <main class="max-w-6xl mx-auto px-4 py-8">
             <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-slate-100">
-                <h2 class="text-xl font-bold mb-4 text-slate-800 text-center">Encuentra o compara chollos mejor valorados en Amazon</h2>
+                <h2 class="text-xl font-bold mb-4 text-slate-800 text-center">Encuentra y compara las mejores opciones por calidad-precio</h2>
                 <div class="flex flex-col sm:flex-row gap-3">
                     <input 
                         type="text" 
@@ -37,7 +37,7 @@
                     <button 
                         onclick="buscarOCrearChollo()" 
                         class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2">
-                        <span>📊 Analizar y Comparar</span>
+                        <span>📊 Analizar Opción</span>
                     </button>
                 </div>
             </div>
@@ -53,10 +53,10 @@
             <!-- Resultados -->
             <section>
                 <div class="flex justify-between items-center mb-6 border-b pb-2">
-                    <h3 id="categoriaTitulo" class="text-xl font-bold text-slate-800">Chollos Destacados</h3>
+                    <h3 id="categoriaTitulo" class="text-xl font-bold text-slate-800">Selección Destacada</h3>
                     <span id="contadorResultados" class="text-sm text-slate-500 font-medium"></span>
                 </div>
-                <div id="loading" class="text-center py-12 text-slate-500 hidden">Realizando análisis comparativo y buscando la mejor opción calidad-precio...</div>
+                <div id="loading" class="text-center py-12 text-slate-500 hidden">Generando guía comparativa de compra...</div>
                 <div id="productosGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </section>
         </main>
@@ -74,15 +74,14 @@
                 <h3 id="modalTitulo" class="text-2xl font-bold text-slate-800 mt-3 mb-4"></h3>
                 
                 <div class="bg-orange-50/60 border border-orange-100 rounded-2xl p-4 mb-6">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-orange-700 mb-2">⚖️ Comparativa Calidad-Precio & Ganador Recomendado</h4>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-orange-700 mb-2">⚖️ Guía de Compra y Elección Recomendada</h4>
                     <div id="modalDescripcion" class="text-slate-700 text-sm leading-relaxed space-y-2"></div>
                 </div>
 
                 <div class="flex items-center justify-between border-t border-slate-100 pt-4" id="modalBotonContenedor">
-                    <span class="text-xs text-slate-400">Popularidad: <strong id="modalClics">0</strong> clics</span>
-                    <!-- El botón se genera dinámicamente para asegurar que cada enlace sea único -->
+                    <span class="text-xs text-slate-400">Popularidad: <strong id="modalClics">0</strong> consultas</span>
                     <a id="modalEnlaceAmazon" href="#" target="_blank" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md flex items-center gap-2">
-                        <span>Ver Oferta Ganadora en Amazon</span> &rarr;
+                        <span>Ver Disponibilidad en Amazon</span> &rarr;
                     </a>
                 </div>
             </div>
@@ -91,13 +90,13 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-slate-500 text-sm mt-12">
-        <p>Smartchollo &copy; 2026 - Comparador de ofertas en Amazon.</p>
+        <p>Smartchollo &copy; 2026 - Guía independiente de compras online.</p>
         <p class="text-xs text-slate-400 mt-2 max-w-2xl mx-auto px-4">
-            Como Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables.
+            Como Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables. Los precios y la disponibilidad de los productos son precisos en la fecha/hora indicada y están sujetos a cambios en Amazon.
         </p>
     </footer>
 
-    <!-- Script de Supabase y Lógica de Comparativas -->
+    <!-- Script de Supabase y Lógica Adaptada -->
     <script>
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
@@ -146,14 +145,14 @@
             if (!productosCargados || productosCargados.length === 0) {
                 gridEl.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-                        <p class="text-slate-600 text-lg mb-2">No se encontraron productos registrados para "${filtroTexto || categoriaFiltro}".</p>
-                        <p class="text-slate-400 text-sm mb-6">Haz clic en "Analizar y Comparar" para generar la comparativa automáticamente.</p>
+                        <p class="text-slate-600 text-lg mb-2">No se encontraron productos para "${filtroTexto || categoriaFiltro}".</p>
+                        <p class="text-slate-400 text-sm mb-6">Haz clic en "Analizar Opción" para generar la guía comparativa automáticamente.</p>
                     </div>`;
-                contadorEl.innerText = `0 chollos`;
+                contadorEl.innerText = `0 artículos`;
                 return;
             }
 
-            contadorEl.innerText = `${productosCargados.length} chollos encontrados`;
+            contadorEl.innerText = `${productosCargados.length} artículos encontrados`;
 
             productosCargados.forEach(producto => {
                 const card = document.createElement('div');
@@ -166,13 +165,13 @@
                         <div class="p-5">
                             <span class="text-xs font-semibold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">${producto.categoria}</span>
                             <h4 class="font-bold text-lg text-slate-800 mt-3 mb-2 line-clamp-2">${producto.titulo}</h4>
-                            <p class="text-slate-600 text-sm line-clamp-3 mb-4 leading-relaxed">${producto.descripcion}</p>
+                            <p class="text-slate-600 text-sm line-clamp-3 mb-4 leading-relaxed">${producto.descripcion.replace(/<[^>]*>?/gm, '')}</p>
                         </div>
                     </div>
                     <div class="p-5 pt-0 flex items-center justify-between border-t border-slate-100 mt-auto bg-slate-50/50 py-3">
-                        <span class="text-xs text-slate-400">Popularidad: <strong>${producto.clics || 0} clics</strong></span>
+                        <span class="text-xs text-slate-400">Popularidad: <strong>${producto.clics || 0} consultas</strong></span>
                         <button class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">
-                            Ver Comparativa
+                            Ver Guía de Compra
                         </button>
                     </div>
                 `;
@@ -183,16 +182,16 @@
         async function inicializarCatalogoProfesional() {
             const catalogoInicial = [
                 {
-                    titulo: "Auriculares Inalámbricos Bluetooth - Comparativa 2026",
-                    descripcion: "Tras analizar más de 10 modelos destacados en Amazon, la opción equilibrada destaca por ofrecer cancelación activa de ruido por menos de 40€. Supera a las alternativas de gama baja en autonomía de batería (hasta 30h) y respuesta de graves.",
+                    titulo: "Auriculares Inalámbricos Bluetooth - Guía de Elección",
+                    descripcion: "Análisis comparativo de alternativas en audio inalámbrico. Se valora especialmente la relación autonomía-precio y la comodidad de uso diario.",
                     enlace_amazon: "https://www.amazon.es/s?k=auriculares+bluetooth&tag=smartchollo-21",
                     imagen_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600",
                     categoria: "Tecnología",
                     clics: 0
                 },
                 {
-                    titulo: "Freidora de Aire de Alta Capacidad - Análisis de Mercado",
-                    descripcion: "Evaluación comparativa entre modelos compactos y de gran capacidad. El modelo recomendado destaca por sus 5.5L de volumen y 1700W de potencia, ofreciendo el mejor equilibrio de tostado y velocidad frente a opciones de mayor precio.",
+                    titulo: "Freidora de Aire de Gran Capacidad - Análisis y Rendimiento",
+                    descripcion: "Evaluación práctica de freidoras de aire sin aceite. Comparativa enfocada en eficiencia energética, volumen de cocción y facilidad de limpieza.",
                     enlace_amazon: "https://www.amazon.es/s?k=freidora+de+aire&tag=smartchollo-21",
                     imagen_url: "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600",
                     categoria: "Hogar",
@@ -241,24 +240,23 @@
                 urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
             }
 
-            // REDACCIÓN AUTOMÁTICA DE COMPARATIVA DE MERCADO
+            // REDACCIÓN 100% CONFORME A LAS NORMAS DE AMAZON (SIN PRECIOS/RATING FICTICIOS)
             const comparativaTexto = `
-                <p class="font-medium text-slate-800 mb-2">Tras analizar las principales opciones disponibles en Amazon para <strong>"${nombreCapitalizado}"</strong>:</p>
+                <p class="font-medium text-slate-800 mb-2">Puntos clave a considerar para la compra de <strong>"${nombreCapitalizado}"</strong>:</p>
                 <ul class="list-disc pl-5 space-y-1 text-slate-600 mb-3">
-                    <li><strong>Gama Económica:</strong> Cumple con lo básico, pero suele sacrificar calidad de materiales y durabilidad.</li>
-                    <li><strong>Opción Ganadora (Calidad-Precio):</strong> Destaca por obtener valoraciones superiores a 4.5 estrellas, garantizando materiales resistentes y un rendimiento excelente sin sobrecoste.</li>
-                    <li><strong>Gama Premium:</strong> Ofrece pequeños añadidos secundarios, pero incrementa el precio considerablemente.</li>
+                    <li><strong>Gama Básica:</strong> Opción funcional enfocada en presupuestos ajustados.</li>
+                    <li><strong>Opción Recomendada Calidad-Precio:</strong> Alternativa con equilibrio superior en materiales, practicidad y demanda general.</li>
+                    <li><strong>Gama Alta:</strong> Incorpora funcionalidades extra no indispensables para el uso cotidiano.</li>
                 </ul>
                 <p class="text-orange-700 font-semibold bg-orange-100/60 p-2.5 rounded-xl text-xs">
-                    🏆 Recomendación Smartchollo: El enlace adjunto te redirige a la alternativa con mejor puntuación y mayor número de compras verificadas.
+                    💡 Consulta la disponibilidad y precio actualizado directamente en Amazon a través del enlace inferior.
                 </p>
             `;
 
-            // CONSTRUCCIÓN DEL ENLACE ÚNICO Y ESPECÍFICO DE AFILIADO
             const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
 
             const nuevoProducto = {
-                titulo: `${nombreCapitalizado} - Análisis Comparativo & Oferta Top`,
+                titulo: `${nombreCapitalizado} - Análisis y Selección Recomendada`,
                 descripcion: comparativaTexto,
                 enlace_amazon: enlaceAfiliadoAmazon,
                 imagen_url: urlImagen,
@@ -274,7 +272,7 @@
 
         function filtrarCategoria(categoria) {
             categoriaActual = categoria;
-            document.getElementById('categoriaTitulo').innerText = categoria === 'Todas' ? 'Chollos Destacados' : `Chollos en ${categoria}`;
+            document.getElementById('categoriaTitulo').innerText = categoria === 'Todas' ? 'Selección Destacada' : `Artículos en ${categoria}`;
             
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.className = btn.getAttribute('data-cat') === categoria
@@ -286,7 +284,6 @@
             cargarProductos(textoBusqueda, categoriaActual);
         }
 
-        // FUNCIÓN CORREGIDA: Asignación dinámica e independiente para evitar que se repita el enlace
         function abrirModal(id) {
             const producto = productosCargados.find(p => p.id === id);
             if (!producto) return;
@@ -297,7 +294,6 @@
             document.getElementById('modalDescripcion').innerHTML = producto.descripcion;
             document.getElementById('modalClics').innerText = producto.clics || 0;
             
-            // Reemplazo directo del elemento <a> para evitar enlaces clonados entre aperturas
             const contenedorBoton = document.getElementById('modalBotonContenedor');
             const enlaceAntiguo = document.getElementById('modalEnlaceAmazon');
             
@@ -310,7 +306,7 @@
             nuevoEnlace.href = producto.enlace_amazon;
             nuevoEnlace.target = '_blank';
             nuevoEnlace.className = 'bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md flex items-center gap-2';
-            nuevoEnlace.innerHTML = '<span>Ver Oferta Ganadora en Amazon</span> &rarr;';
+            nuevoEnlace.innerHTML = '<span>Ver Disponibilidad en Amazon</span> &rarr;';
             nuevoEnlace.onclick = () => registrarClic(producto.id);
 
             contenedorBoton.appendChild(nuevoEnlace);
