@@ -96,7 +96,7 @@
         </p>
     </footer>
 
-    <!-- Script de Supabase y Selección Dinámica de Imágenes -->
+    <!-- Script de Supabase y Fix de Enlaces en Pantalla Principal -->
     <script>
         const SUPABASE_URL = 'https://vfxhsmpaneoxrmabyoku.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_sOl-n5qYdT3stVQJUB0PPg_WinedBPp';
@@ -135,6 +135,7 @@
                 return;
             }
 
+            // Guardamos la lista completa de productos actualizados en memoria
             productosCargados = data || [];
 
             if (!productosCargados || productosCargados.length === 0) {
@@ -152,7 +153,10 @@
             productosCargados.forEach(producto => {
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col justify-between hover:shadow-xl transition duration-300 cursor-pointer';
-                card.onclick = () => abrirModal(producto.id);
+                
+                // Pasamos la ID del producto de forma explícita
+                card.setAttribute('data-id', producto.id);
+                card.onclick = () => abrirModalPorId(producto.id);
                 
                 card.innerHTML = `
                     <div>
@@ -201,8 +205,7 @@
             const nombreCapitalizado = texto.charAt(0).toUpperCase() + texto.slice(1);
 
             let categoriaAsignada = 'Tecnología';
-            // Imagen temática adaptada según la palabra buscada
-            let urlImagen = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=600'; // Móvil / Tecnología general
+            let urlImagen = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=600';
 
             if (textoLower.includes('auricular') || textoLower.includes('cascos') || textoLower.includes('headphone')) {
                 categoriaAsignada = 'Tecnología';
@@ -215,97 +218,4 @@
                 urlImagen = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=600';
             } else if (textoLower.includes('aspirador') || textoLower.includes('freidora') || textoLower.includes('cocina') || textoLower.includes('hogar') || textoLower.includes('robot')) {
                 categoriaAsignada = 'Hogar';
-                urlImagen = 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600';
-            }
-
-            const comparativaTexto = `
-                <p class="font-medium text-slate-800 mb-2">Puntos clave a considerar para la compra de <strong>"${nombreCapitalizado}"</strong>:</p>
-                <ul class="list-disc pl-5 space-y-1 text-slate-600 mb-3">
-                    <li><strong>Gama Básica:</strong> Opción funcional enfocada en presupuestos ajustados.</li>
-                    <li><strong>Opción Recomendada Calidad-Precio:</strong> Alternativa con equilibrio superior en materiales, practicidad y demanda general.</li>
-                    <li><strong>Gama Alta:</strong> Incorpora funcionalidades extra no indispensables para el uso cotidiano.</li>
-                </ul>
-                <p class="text-orange-700 font-semibold bg-orange-100/60 p-2.5 rounded-xl text-xs">
-                    💡 Consulta la disponibilidad y precio actualizado directamente en Amazon a través del enlace inferior.
-                </p>
-            `;
-
-            // Enlace dinámico directo para este término de búsqueda
-            const enlaceAfiliadoAmazon = `https://www.amazon.es/s?k=${encodeURIComponent(texto)}&tag=smartchollo-21`;
-
-            const nuevoProducto = {
-                titulo: `${nombreCapitalizado} - Análisis y Selección Recomendada`,
-                descripcion: comparativaTexto,
-                enlace_amazon: enlaceAfiliadoAmazon,
-                imagen_url: urlImagen,
-                categoria: categoriaAsignada,
-                clics: 0
-            };
-
-            await supabaseClient.from('productos').insert([nuevoProducto]);
-            
-            loadingEl.classList.add('hidden');
-            cargarProductos(texto, categoriaActual);
-        }
-
-        function filtrarCategoria(categoria) {
-            categoriaActual = categoria;
-            document.getElementById('categoriaTitulo').innerText = categoria === 'Todas' ? 'Selección Destacada' : `Artículos en ${categoria}`;
-            
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.className = btn.getAttribute('data-cat') === categoria
-                    ? 'cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-orange-600 text-white shadow-sm'
-                    : 'cat-btn px-5 py-2.5 rounded-full font-medium text-sm transition bg-white text-slate-700 hover:bg-slate-100 border border-slate-200';
-            });
-
-            const textoBusqueda = document.getElementById('searchInput').value;
-            cargarProductos(textoBusqueda, categoriaActual);
-        }
-
-        function abrirModal(id) {
-            const producto = productosCargados.find(p => p.id === id);
-            if (!producto) return;
-
-            document.getElementById('modalImagen').src = producto.imagen_url;
-            document.getElementById('modalTitulo').innerText = producto.titulo;
-            document.getElementById('modalCategoria').innerText = producto.categoria;
-            document.getElementById('modalDescripcion').innerHTML = producto.descripcion;
-            document.getElementById('modalClics').innerText = producto.clics || 0;
-            
-            const contenedorBoton = document.getElementById('modalBotonContenedor');
-            const enlaceAntiguo = document.getElementById('modalEnlaceAmazon');
-            
-            if (enlaceAntiguo) {
-                enlaceAntiguo.remove();
-            }
-
-            const nuevoEnlace = document.createElement('a');
-            nuevoEnlace.id = 'modalEnlaceAmazon';
-            nuevoEnlace.href = producto.enlace_amazon;
-            nuevoEnlace.target = '_blank';
-            nuevoEnlace.className = 'bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md flex items-center gap-2';
-            nuevoEnlace.innerHTML = '<span>Ver Disponibilidad en Amazon</span> &rarr;';
-            nuevoEnlace.onclick = () => registrarClic(producto.id);
-
-            contenedorBoton.appendChild(nuevoEnlace);
-
-            document.getElementById('modalDetalle').classList.remove('hidden');
-        }
-
-        function cerrarModal() {
-            document.getElementById('modalDetalle').classList.add('hidden');
-        }
-
-        async function registrarClic(idProducto) {
-            const { data: productoActual } = await supabaseClient.from('productos').select('clics').eq('id', idProducto).single();
-            if (productoActual) {
-                await supabaseClient.from('productos').update({ clics: (productoActual.clics || 0) + 1 }).eq('id', idProducto);
-            }
-        }
-
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') buscarOCrearChollo();
-        });
-    </script>
-</body>
-</html>
+                urlImagen = '
